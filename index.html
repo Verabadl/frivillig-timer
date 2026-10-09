@@ -22,12 +22,39 @@ input,textarea{font:inherit;padding:12px;border:1px solid var(--bd);border-radiu
 button{font:inherit;font-weight:700;padding:14px;border:0;border-radius:12px;background:var(--ac);color:#fff}
 button.lnk{background:none;color:var(--ac);padding:4px 8px}
 button:disabled{opacity:.5}
+.links{display:flex;justify-content:center}
+.top .btns{display:flex;gap:4px}
 .msg{padding:12px;border-radius:10px;display:none}
 .msg.ok{display:block;background:#d9f2e6;color:#0b4a34}
 .msg.err{display:block;background:#fbdcdc;color:#7a1414}
 .item{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--bd);font-size:.9rem}
 .item:first-of-type{border-top:0}
 .item small{color:var(--mu);display:block}
+.tabs,.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin-bottom:14px}
+.tab,.seg button{background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:11px;font-weight:600}
+.tab.on,.seg button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+button.sec{background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-weight:600}
+.lbl{font-weight:600;font-size:.9rem}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.th{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--bg)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th button{position:absolute;top:4px;right:4px;width:28px;height:28px;padding:0;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:16px;line-height:1}
+.hint{color:var(--mu);font-size:.8rem}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border-radius:14px;padding:12px}
+.kpi span{display:block;color:var(--mu);font-size:.78rem}
+.kpi b{display:block;font-size:1.5rem;color:var(--ac);margin-top:2px}
+.card svg{width:100%;height:auto;display:block}
+.gl{stroke:var(--bd);stroke-width:1}
+.tx{fill:var(--mu);font-size:10px}
+.bar{fill:var(--ac)}
+.ln{fill:none;stroke:var(--ac);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ar{fill:var(--ac);opacity:.12}
+.dt{fill:var(--ac);stroke:var(--card);stroke-width:2}
+.tv{width:100%;border-collapse:collapse;font-size:.88rem}
+.tv th,.tv td{text-align:right;padding:6px 4px;border-top:1px solid var(--bd)}
+.tv th:first-child,.tv td:first-child{text-align:left}
+.tv th{color:var(--mu);font-weight:600;border-top:0}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -41,28 +68,85 @@ button:disabled{opacity:.5}
     <label>Passord<input id="pw" type="password" autocomplete="current-password" required></label>
     <button id="lbtn">Logg inn</button>
     <div id="lmsg" class="msg"></div>
+    <div class="links"><button class="lnk" id="forgot" type="button">Glemt passord?</button></div>
+  </form>
+</section>
+
+<section id="reset" hidden>
+  <h1>Glemt passord</h1>
+  <form id="rf">
+    <label>E-post<input id="rem" type="email" autocomplete="username" required></label>
+    <button id="rbtn">Send lenke for nytt passord</button>
+    <div id="rmsg" class="msg"></div>
+    <div class="links"><button class="lnk" id="rback" type="button">Tilbake til innlogging</button></div>
+  </form>
+</section>
+
+<section id="setpw" hidden>
+  <h1>Nytt passord</h1>
+  <form id="pf">
+    <label>Nytt passord (minst 8 tegn)<input id="np" type="password" autocomplete="new-password" minlength="8" required></label>
+    <label>Gjenta passord<input id="np2" type="password" autocomplete="new-password" minlength="8" required></label>
+    <button id="pbtn">Lagre passord</button>
+    <div id="pmsg" class="msg"></div>
+    <div class="links"><button class="lnk" id="pcancel" type="button">Avbryt</button></div>
   </form>
 </section>
 
 <section id="app" hidden>
   <div class="top">
     <div><h1>Frivillige timer</h1><span id="avdnavn"></span></div>
-    <button class="lnk" id="out" type="button">Logg ut</button>
+    <div class="btns"><button class="lnk" id="chpw" type="button">Bytt passord</button><button class="lnk" id="out" type="button">Logg ut</button></div>
   </div>
-  <form id="f">
-    <label>Arrangement<input id="arr" required placeholder="F.eks. Sommerfest"></label>
-    <label>Dato<input id="dato" type="date" required></label>
-    <div class="row">
-      <label>Antall ressurser (x)<input id="x" type="number" inputmode="numeric" min="1" step="1" required></label>
-      <label>Timer hver (y)<input id="y" type="number" inputmode="decimal" min="0.25" step="0.25" required></label>
+  <div class="tabs">
+    <button type="button" class="tab on" id="tab-reg" data-t="reg">Registrer</button>
+    <button type="button" class="tab" id="tab-ov" data-t="ov">Oversikt</button>
+  </div>
+
+  <div id="p-reg">
+    <form id="f">
+      <label>Arrangement<input id="arr" required placeholder="F.eks. Sommerfest"></label>
+      <label>Dato<input id="dato" type="date" required></label>
+      <div class="row">
+        <label>Antall ressurser (x)<input id="x" type="number" inputmode="numeric" min="1" step="1" required></label>
+        <label>Timer hver (y)<input id="y" type="number" inputmode="decimal" min="0.25" step="0.25" required></label>
+      </div>
+      <div class="sum">Totalt antall timer<b id="tot">0</b></div>
+      <label>Registrert av (valgfritt)<input id="av" autocomplete="name"></label>
+      <label>Kommentar (valgfritt)<textarea id="kom" rows="2"></textarea></label>
+      <div style="display:grid;gap:8px">
+        <span class="lbl">Bilder fra aktiviteten (inntil 5)</span>
+        <div class="row">
+          <button type="button" class="sec" id="cam">Ta bilde</button>
+          <button type="button" class="sec" id="gal">Velg fra galleri</button>
+        </div>
+        <input id="fcam" type="file" accept="image/*" capture="environment" hidden>
+        <input id="fgal" type="file" accept="image/*" multiple hidden>
+        <div id="thumbs" class="thumbs"></div>
+        <span class="hint" id="fcount">Ingen bilder valgt</span>
+      </div>
+      <button id="btn">Lagre</button>
+      <div id="msg" class="msg"></div>
+    </form>
+    <div class="card"><strong>Siste registreringer</strong><div id="hist"></div></div>
+  </div>
+
+  <div id="p-ov" hidden>
+    <div class="kpis">
+      <div class="kpi"><span>Mine timer totalt</span><b id="k1">–</b></div>
+      <div class="kpi"><span>Avdelingen totalt</span><b id="k2">–</b></div>
+      <div class="kpi"><span>Mine denne måneden</span><b id="k3">–</b></div>
+      <div class="kpi"><span>Avdelingen denne måneden</span><b id="k4">–</b></div>
     </div>
-    <div class="sum">Totalt antall timer<b id="tot">0</b></div>
-    <label>Registrert av (valgfritt)<input id="av" autocomplete="name"></label>
-    <label>Kommentar (valgfritt)<textarea id="kom" rows="2"></textarea></label>
-    <button id="btn">Lagre</button>
-    <div id="msg" class="msg"></div>
-  </form>
-  <div class="card"><strong>Siste registreringer</strong><div id="hist"></div></div>
+    <div class="seg">
+      <button type="button" class="on" data-w="avd">Avdelingen</button>
+      <button type="button" data-w="meg">Meg</button>
+    </div>
+    <div class="card"><strong>Timer per måned</strong><div id="c1"></div></div>
+    <div class="card"><strong>Akkumulert antall timer</strong><div id="c2"></div></div>
+    <div class="card"><strong>Måned for måned</strong><div id="tbl"></div></div>
+    <div id="omsg" class="msg"></div>
+  </div>
 </section>
 
 </main>
@@ -102,7 +186,8 @@ async function api(path, opts = {}, retry = true){
   return r;
 }
 
-function logout(){ S = null; avdId = null; save(null); $("app").hidden = true; $("login").hidden = false; }
+function view(n){ for (const i of ["login","reset","setpw","app"]) $(i).hidden = i !== n; }
+function logout(){ S = null; avdId = null; save(null); view("login"); }
 
 async function start(){
   try {
@@ -110,20 +195,139 @@ async function start(){
     if (!d.length) { logout(); show($("lmsg"), "Brukeren er ikke koblet til en avdeling. Kontakt administrator.", "err"); return; }
     avdId = d[0].avdeling_id;
     $("avdnavn").textContent = d[0].avdeling.navn;
-    $("login").hidden = true; $("app").hidden = false;
+    view("app");
     $("dato").valueAsDate = new Date();
-    hist();
+    ST = null; tab("reg"); hist();
   } catch { if (S) { logout(); show($("lmsg"), "Kunne ikke hente avdeling.", "err"); } }
 }
 
 async function hist(){
   try {
-    const d = await (await api("frivillig_timer?select=arrangement,dato,antall_ressurser,timer_per_ressurs,totalt_timer&order=opprettet.desc&limit=5")).json();
-    $("hist").innerHTML = d.length ? d.map(h =>
-      `<div class="item"><div>${esc(h.arrangement)}<small>${esc(h.dato)} · ${h.antall_ressurser} × ${h.timer_per_ressurs} t</small></div><b>${h.totalt_timer} t</b></div>`
-    ).join("") : '<div class="item"><small>Ingen registreringer ennå</small></div>';
+    const d = await (await api("frivillig_timer?select=arrangement,dato,antall_ressurser,timer_per_ressurs,totalt_timer,frivillig_bilde(count)&order=opprettet.desc&limit=5")).json();
+    $("hist").innerHTML = d.length ? d.map(h => {
+      const n = (h.frivillig_bilde && h.frivillig_bilde[0] && h.frivillig_bilde[0].count) || 0;
+      return `<div class="item"><div>${esc(h.arrangement)}<small>${esc(h.dato)} · ${h.antall_ressurser} × ${h.timer_per_ressurs} t${n ? " · " + n + (n > 1 ? " bilder" : " bilde") : ""}</small></div><b>${h.totalt_timer} t</b></div>`;
+    }).join("") : '<div class="item"><small>Ingen registreringer ennå</small></div>';
   } catch { $("hist").innerHTML = ""; }
 }
+
+/* ---------- Faner ---------- */
+function tab(t){
+  $("p-reg").hidden = t !== "reg"; $("p-ov").hidden = t !== "ov";
+  $("tab-reg").classList.toggle("on", t === "reg"); $("tab-ov").classList.toggle("on", t === "ov");
+  if (t === "ov") loadStats();
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => tab(b.dataset.t));
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
+  who = b.dataset.w;
+  document.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x === b));
+  if (ST) renderStats();
+});
+
+/* ---------- Statistikk ---------- */
+const MN = ["jan","feb","mar","apr","mai","jun","jul","aug","sep","okt","nov","des"];
+const fmt = n => (+n).toLocaleString("nb-NO", {maximumFractionDigits: 1});
+let ST = null, who = "avd";
+
+function myId(){
+  try { return JSON.parse(atob(S.access.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub; } catch { return null; }
+}
+async function loadStats(){
+  show($("omsg"), "", "");
+  try {
+    ST = await (await api("v_maned_oppsummering?select=bruker_id,maned,timer")).json();
+    renderStats();
+  } catch { if (S) show($("omsg"), "Kunne ikke hente oversikt.", "err"); }
+}
+function sums(mineOnly){
+  const m = new Map(), me = myId();
+  for (const r of ST) {
+    if (mineOnly && r.bruker_id !== me) continue;
+    const k = String(r.maned).slice(0, 7);
+    m.set(k, (m.get(k) || 0) + Number(r.timer));
+  }
+  return m;
+}
+const total = m => [...m.values()].reduce((a, b) => a + b, 0);
+const niceMax = v => { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; };
+const lab = k => MN[+k.slice(5) - 1] + " " + k.slice(0, 4);
+
+function renderStats(){
+  const now = new Date(), nk = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const avd = sums(false), meg = sums(true);
+  $("k1").textContent = fmt(total(meg)); $("k2").textContent = fmt(total(avd));
+  $("k3").textContent = fmt(meg.get(nk) || 0); $("k4").textContent = fmt(avd.get(nk) || 0);
+
+  const all = [...avd.keys(), nk].sort();
+  let [y, mo] = all[0].split("-").map(Number); const last = all[all.length - 1], keys = [];
+  for (;;) { const k = y + "-" + String(mo).padStart(2, "0"); if (k > last) break; keys.push(k); if (++mo > 12) { mo = 1; y++; } }
+
+  const src = who === "avd" ? avd : meg;
+  let run = 0;
+  const vals = keys.map(k => src.get(k) || 0), cum = vals.map(v => (run += v));
+  const n = Math.min(12, keys.length), kk = keys.slice(-n);
+  $("c1").innerHTML = chart(vals.slice(-n), kk, "bar");
+  $("c2").innerHTML = chart(cum.slice(-n), kk, "line");
+  $("tbl").innerHTML = '<table class="tv"><tr><th>Måned</th><th>Timer</th><th>Akkumulert</th></tr>' +
+    kk.map((k, i) => `<tr><td>${lab(k)}</td><td>${fmt(vals.slice(-n)[i])}</td><td>${fmt(cum.slice(-n)[i])}</td></tr>`).reverse().join("") + "</table>";
+}
+
+function chart(vals, keys, kind){
+  const W = 360, H = 190, L = 42, R = 10, T = 14, B = 34, iw = W - L - R, ih = H - T - B;
+  const max = niceMax(Math.max(...vals, 0)), y = v => T + ih - (v / max) * ih;
+  const n = vals.length, step = iw / n, cx = i => L + i * step + step / 2;
+  let g = "";
+  for (const t of [0, .5, 1]) g += `<line class="gl" x1="${L}" x2="${W - R}" y1="${y(max * t)}" y2="${y(max * t)}"/><text class="tx" x="${L - 5}" y="${y(max * t) + 3}" text-anchor="end">${fmt(max * t)}</text>`;
+  let b = "";
+  if (kind === "bar") {
+    const bw = Math.min(26, Math.max(3, step * .6));
+    vals.forEach((v, i) => { if (v > 0) b += `<path class="bar" d="M${cx(i) - bw / 2},${y(0)}V${y(v) + 3}a3,3 0 0 1 3,-3h${bw - 6}a3,3 0 0 1 3,3V${y(0)}z"><title>${lab(keys[i])}: ${fmt(v)} timer</title></path>`; });
+  } else {
+    const pts = vals.map((v, i) => [cx(i), y(v)]);
+    if (n > 1) b += `<path class="ar" d="M${pts[0][0]},${y(0)}${pts.map(p => "L" + p[0] + "," + p[1]).join("")}L${pts[n - 1][0]},${y(0)}z"/><path class="ln" d="M${pts.map(p => p[0] + "," + p[1]).join("L")}"/>`;
+    pts.forEach((p, i) => { if (n <= 12 && (i === n - 1 || n <= 6)) b += `<circle class="dt" cx="${p[0]}" cy="${p[1]}" r="4"><title>${lab(keys[i])}: ${fmt(vals[i])} timer</title></circle>`; });
+    b += `<text class="tx" style="fill:var(--tx);font-weight:600" x="${pts[n - 1][0] + 6}" y="${Math.max(10, pts[n - 1][1] - 12)}" text-anchor="end">${fmt(vals[n - 1])} t</text>`;
+  }
+  const xl = keys.map((k, i) => `<text class="tx" x="${cx(i)}" y="${H - 18}" text-anchor="middle">${MN[+k.slice(5) - 1]}</text>` +
+    (i === 0 || k.endsWith("-01") ? `<text class="tx" x="${cx(i)}" y="${H - 6}" text-anchor="middle">${k.slice(0, 4)}</text>` : "")).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${kind === "bar" ? "Timer per måned" : "Akkumulert antall timer"}">${g}${b}${xl}</svg>`;
+}
+
+/* ---------- Bilder ---------- */
+const MAXPX = 1280;
+let fotos = [];
+async function shrink(file){
+  let bmp;
+  try { bmp = await createImageBitmap(file, {imageOrientation: "from-image"}); }
+  catch {
+    bmp = await new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = URL.createObjectURL(file); });
+  }
+  const k = Math.min(1, MAXPX / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  if (bmp.close) bmp.close();
+  const url = c.toDataURL("image/jpeg", 0.8);
+  return {url, data: url.split(",")[1], name: (file.name || "bilde").replace(/\.[^.]+$/, "") + ".jpg", mime: "image/jpeg"};
+}
+function renderThumbs(){
+  $("thumbs").innerHTML = fotos.map((f, i) => `<div class="th"><img src="${f.url}" alt="Bilde ${i + 1}"><button type="button" data-i="${i}" aria-label="Fjern bilde ${i + 1}">×</button></div>`).join("");
+  $("fcount").textContent = fotos.length ? fotos.length + " av 5 bilder valgt" : "Ingen bilder valgt";
+  $("cam").disabled = $("gal").disabled = fotos.length >= 5;
+}
+let q = Promise.resolve();
+const addFiles = list => (q = q.then(() => addNow(list)));
+async function addNow(list){
+  show($("msg"), "", "");
+  for (const f of list) {
+    if (fotos.length >= 5) { show($("msg"), "Maks 5 bilder per registrering.", "err"); break; }
+    try { fotos.push(await shrink(f)); } catch { show($("msg"), "Kunne ikke lese et av bildene.", "err"); }
+  }
+  renderThumbs();
+}
+$("cam").onclick = () => $("fcam").click();
+$("gal").onclick = () => $("fgal").click();
+$("fcam").onchange = $("fgal").onchange = e => { addFiles([...e.target.files]); e.target.value = ""; };
+$("thumbs").onclick = e => { const b = e.target.closest("button[data-i]"); if (b) { fotos.splice(+b.dataset.i, 1); renderThumbs(); } };
 
 $("lf").onsubmit = async e => {
   e.preventDefault(); $("lbtn").disabled = true; show($("lmsg"), "", "");
@@ -140,22 +344,83 @@ const calc = () => $("tot").textContent = ((+$("x").value || 0) * (+$("y").value
 $("x").oninput = $("y").oninput = calc;
 
 $("f").onsubmit = async e => {
-  e.preventDefault(); $("btn").disabled = true; show($("msg"), "", "");
-  const body = {
-    avdeling_id: avdId, arrangement: $("arr").value.trim(), dato: $("dato").value,
-    antall_ressurser: +$("x").value, timer_per_ressurs: +$("y").value,
-    registrert_av: $("av").value.trim() || null, kommentar: $("kom").value.trim() || null
-  };
+  e.preventDefault(); $("btn").disabled = true; $("btn").textContent = "Lagrer…"; show($("msg"), "", "");
+  const antall = +$("x").value, timer = +$("y").value, nb = fotos.length;
   try {
-    await api("frivillig_timer", {method: "POST", headers: {Prefer: "return=minimal"}, body: JSON.stringify(body)});
-    show($("msg"), `Lagret: ${body.antall_ressurser} × ${body.timer_per_ressurs} t = ${body.antall_ressurser * body.timer_per_ressurs} timer.`, "ok");
-    $("x").value = $("y").value = $("kom").value = ""; calc(); hist();
-  } catch { if (S) show($("msg"), "Kunne ikke lagre. Prøv igjen.", "err"); }
-  $("btn").disabled = false;
+    await api("rpc/registrer_aktivitet", {method: "POST", body: JSON.stringify({
+      p_arrangement: $("arr").value.trim(), p_dato: $("dato").value, p_antall: antall, p_timer: timer,
+      p_registrert_av: $("av").value.trim() || null, p_kommentar: $("kom").value.trim() || null,
+      p_bilder: fotos.map(f => ({filnavn: f.name, mime: f.mime, data: f.data}))
+    })});
+    show($("msg"), `Lagret: ${antall} × ${timer} t = ${fmt(antall * timer)} timer` + (nb ? ` og ${nb} ${nb > 1 ? "bilder" : "bilde"}.` : "."), "ok");
+    $("x").value = $("y").value = $("kom").value = ""; fotos = []; renderThumbs(); calc(); ST = null; hist();
+  } catch { if (S) show($("msg"), "Kunne ikke lagre. Sjekk tilkoblingen og prøv igjen.", "err"); }
+  $("btn").disabled = false; $("btn").textContent = "Lagre";
 };
 
-S = load();
-if (S) start(); else $("login").hidden = false;
+$("forgot").onclick = () => { $("rem").value = $("em").value; show($("rmsg"), "", ""); view("reset"); };
+$("rback").onclick = () => view("login");
+
+$("rf").onsubmit = async e => {
+  e.preventDefault(); $("rbtn").disabled = true; show($("rmsg"), "", "");
+  try {
+    const redirect = encodeURIComponent(location.origin + location.pathname);
+    const r = await fetch(SUPABASE_URL + "/auth/v1/recover?redirect_to=" + redirect, {
+      method: "POST", headers: {apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+      body: JSON.stringify({email: $("rem").value.trim()})
+    });
+    if (r.status === 429) { show($("rmsg"), "For mange forsøk. Vent litt og prøv igjen.", "err"); }
+    else if (!r.ok) throw new Error("recover");
+    else show($("rmsg"), "Hvis e-posten er registrert, er en lenke for nytt passord sendt. Sjekk også søppelpost.", "ok");
+  } catch { show($("rmsg"), "Kunne ikke sende e-post. Prøv igjen senere.", "err"); }
+  $("rbtn").disabled = false;
+};
+
+$("chpw").onclick = () => { $("np").value = $("np2").value = ""; show($("pmsg"), "", ""); view("setpw"); };
+$("pcancel").onclick = () => { if (load()) view("app"); else logout(); };
+
+async function putPassword(p, retry = true){
+  const r = await fetch(SUPABASE_URL + "/auth/v1/user", {
+    method: "PUT",
+    headers: {apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + S.access, "Content-Type": "application/json"},
+    body: JSON.stringify({password: p})
+  });
+  if (r.status === 401 && retry && S.refresh) {
+    S = await auth("token?grant_type=refresh_token", {refresh_token: S.refresh});
+    return putPassword(p, false);
+  }
+  return r;
+}
+
+$("pf").onsubmit = async e => {
+  e.preventDefault(); show($("pmsg"), "", "");
+  const p = $("np").value;
+  if (p !== $("np2").value) { show($("pmsg"), "Passordene er ikke like.", "err"); return; }
+  $("pbtn").disabled = true;
+  try {
+    const r = await putPassword(p);
+    if (r.status === 422) { show($("pmsg"), "Passordet er for svakt, eller likt det gamle. Velg et annet.", "err"); }
+    else if (!r.ok) throw new Error("pw");
+    else { save(S); $("np").value = $("np2").value = ""; await start(); alert("Passordet er endret."); }
+  } catch { show($("pmsg"), "Kunne ikke endre passord. Be om en ny lenke via «Glemt passord?».", "err"); }
+  $("pbtn").disabled = false;
+};
+
+// Oppstart: sjekk om vi kommer fra en lenke for nytt passord
+const hp = new URLSearchParams(location.hash.slice(1));
+if (hp.get("type") === "recovery" && hp.get("access_token")) {
+  save(null);
+  S = {access: hp.get("access_token"), refresh: hp.get("refresh_token")};
+  history.replaceState(null, "", location.pathname + location.search);
+  view("setpw");
+} else if (hp.get("error_description")) {
+  history.replaceState(null, "", location.pathname + location.search);
+  view("login");
+  show($("lmsg"), "Lenken er utløpt eller ugyldig. Trykk «Glemt passord?» for å få en ny.", "err");
+} else {
+  S = load();
+  if (S) start(); else view("login");
+}
 </script>
 </body>
 </html>
