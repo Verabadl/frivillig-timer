@@ -15,24 +15,24 @@ h1{font-size:1.3rem;margin:8px 0 4px}
 .top span{color:var(--mu);font-size:.9rem}
 form,.card{background:var(--card);border-radius:14px;padding:16px;display:grid;gap:14px;margin-bottom:16px}
 label{display:grid;gap:6px;font-weight:600;font-size:.9rem}
-input,textarea{font:inherit;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);width:100%}
+input,textarea,select{font:inherit;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);width:100%}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .sum{background:var(--bg);border-radius:10px;padding:12px;text-align:center;color:var(--mu)}
 .sum b{display:block;font-size:1.6rem;color:var(--ac)}
 button{font:inherit;font-weight:700;padding:14px;border:0;border-radius:12px;background:var(--ac);color:#fff}
-button.lnk{background:none;color:var(--ac);padding:4px 8px}
+button.lnk{background:none;color:var(--ac);padding:4px 8px;white-space:nowrap}
 button:disabled{opacity:.5}
 .links{display:flex;justify-content:center}
-.top .btns{display:flex;gap:4px}
+.top .btns{display:flex;gap:4px;flex-shrink:0}
 .msg{padding:12px;border-radius:10px;display:none}
 .msg.ok{display:block;background:#d9f2e6;color:#0b4a34}
 .msg.err{display:block;background:#fbdcdc;color:#7a1414}
 .item{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--bd);font-size:.9rem}
 .item:first-of-type{border-top:0}
 .item small{color:var(--mu);display:block}
-.tabs,.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin-bottom:14px}
-.tab,.seg button{background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:11px;font-weight:600}
-.tab.on,.seg button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tabs,.seg,.sub{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin-bottom:14px}
+.tab,.seg button,.sub button{background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:11px;font-weight:600}
+.tab.on,.seg button.on,.sub button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 button.sec{background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-weight:600}
 .lbl{font-weight:600;font-size:.9rem}
 .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
@@ -55,6 +55,26 @@ button.sec{background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-
 .tv th,.tv td{text-align:right;padding:6px 4px;border-top:1px solid var(--bd)}
 .tv th:first-child,.tv td:first-child{text-align:left}
 .tv th{color:var(--mu);font-weight:600;border-top:0}
+button.sm{padding:8px 12px;font-size:.85rem}
+.arow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0}
+.chk{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.88rem}
+.chk input{width:auto}
+.bar-h{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar-h i{display:block;height:100%;background:var(--ac)}
+.item>div:first-child{flex:1;min-width:0}
+.mini{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.mini img{width:76px;height:76px;object-fit:cover;border-radius:8px}
+.pill{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--ac);border:1px solid var(--bd)}
+.rh{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.rh h2{font-size:1.1rem;margin:0}
+@media print{
+  :root{--bg:#fff;--card:#fff;--tx:#000;--mu:#555;--bd:#ccc;--ac:#0b6e4f}
+  body *{visibility:hidden}
+  #rap-ut,#rap-ut *{visibility:visible}
+  #rap-ut{position:absolute;left:0;top:0;width:100%}
+  .noprint,.noprint *{display:none!important}
+  .card,.kpi{border:1px solid #ccc;break-inside:avoid}
+}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -101,6 +121,7 @@ button.sec{background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-
   <div class="tabs">
     <button type="button" class="tab on" id="tab-reg" data-t="reg">Registrer</button>
     <button type="button" class="tab" id="tab-ov" data-t="ov">Oversikt</button>
+    <button type="button" class="tab" id="tab-adm" data-t="adm" hidden>Admin</button>
   </div>
 
   <div id="p-reg">
@@ -147,6 +168,68 @@ button.sec{background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-
     <div class="card"><strong>Måned for måned</strong><div id="tbl"></div></div>
     <div id="omsg" class="msg"></div>
   </div>
+
+  <div id="p-adm" hidden>
+    <div class="sub noprint">
+      <button type="button" class="on" data-a="rap">Rapporter</button>
+      <button type="button" data-a="bru">Brukere</button>
+      <button type="button" data-a="avd">Avdelinger</button>
+    </div>
+
+    <div id="a-rap">
+      <form id="rf2" class="noprint">
+        <label>Avdeling<select id="rav"></select></label>
+        <div class="row">
+          <label>Fra måned<input id="rfra" type="month" required></label>
+          <label>Til måned<input id="rtil" type="month" required></label>
+        </div>
+        <label class="chk"><input type="checkbox" id="rall"> Vis miniatyrbilder i rapporten</label>
+        <button id="rbtn2">Vis rapport</button>
+        <div id="rmsg2" class="msg"></div>
+      </form>
+      <div id="rap-ut"></div>
+    </div>
+
+    <div id="a-bru" hidden>
+      <div class="card">
+        <div class="rh"><strong>Brukere</strong><button type="button" class="sec sm" id="bny">Ny bruker</button></div>
+        <div id="bmsg" class="msg"></div>
+        <div id="bliste"></div>
+      </div>
+      <form id="bf" hidden>
+        <strong id="btitle">Ny bruker</strong>
+        <label>E-post<input id="bem" type="email" autocomplete="off" required></label>
+        <label>Passord
+          <div class="row" style="grid-template-columns:1fr auto">
+            <input id="bpw" type="text" autocomplete="off" minlength="8">
+            <button type="button" class="sec sm" id="bgen">Lag passord</button>
+          </div>
+        </label>
+        <label>Avdeling<select id="bav"></select></label>
+        <label class="chk"><input type="checkbox" id="badm"> Administrator</label>
+        <label class="chk" id="bdearad"><input type="checkbox" id="bdea"> Deaktivert (kan ikke logge inn)</label>
+        <button id="blagre">Lagre</button>
+        <button type="button" class="sec" id="bavbryt">Avbryt</button>
+        <button type="button" class="sec" id="bslett" style="color:#b42318">Slett bruker</button>
+        <div id="bmsg2" class="msg"></div>
+      </form>
+    </div>
+
+    <div id="a-avd" hidden>
+      <div class="card">
+        <strong>Avdelinger</strong>
+        <div id="amsg" class="msg"></div>
+        <div id="aliste"></div>
+      </div>
+      <div class="card">
+        <strong>Ny avdeling</strong>
+        <div class="row" style="grid-template-columns:1fr auto">
+          <input id="anavn" type="text" placeholder="Navn på avdeling" maxlength="80" aria-label="Navn på ny avdeling">
+          <button type="button" id="alegg" class="sm">Legg til</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 </main>
@@ -157,7 +240,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ====================================================================
 const $ = id => document.getElementById(id);
 const KEY = "ft_session";
-let S = null, avdId = null;
+let S = null, avdId = null, ADMIN = false;
 
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } };
 const save = s => { try { s ? localStorage.setItem(KEY, JSON.stringify(s)) : localStorage.removeItem(KEY); } catch {} };
@@ -182,7 +265,7 @@ async function api(path, opts = {}, retry = true){
     try { S = await auth("token?grant_type=refresh_token", {refresh_token: S.refresh}); save(S); return api(path, opts, false); }
     catch { logout(); throw new Error("utlopt"); }
   }
-  if (!r.ok) throw new Error("api");
+  if (!r.ok) { const e = new Error("api"); e.status = r.status; throw e; }
   return r;
 }
 
@@ -191,19 +274,21 @@ function logout(){ S = null; avdId = null; save(null); view("login"); }
 
 async function start(){
   try {
-    const d = await (await api("bruker_avdeling?select=avdeling_id,avdeling(navn)")).json();
-    if (!d.length) { logout(); show($("lmsg"), "Brukeren er ikke koblet til en avdeling. Kontakt administrator.", "err"); return; }
-    avdId = d[0].avdeling_id;
-    $("avdnavn").textContent = d[0].avdeling.navn;
+    const d = await (await api("bruker_avdeling?select=avdeling_id,er_admin,avdeling(navn)&user_id=eq." + myId())).json();
+    if (!d.length || (!d[0].avdeling_id && !d[0].er_admin)) { logout(); show($("lmsg"), "Brukeren er ikke koblet til en avdeling. Kontakt administrator.", "err"); return; }
+    avdId = d[0].avdeling_id; ADMIN = !!d[0].er_admin;
+    $("avdnavn").textContent = (d[0].avdeling ? d[0].avdeling.navn : "") + (d[0].avdeling && ADMIN ? " · " : "") + (ADMIN ? "Administrator" : "");
+    $("tab-adm").hidden = !ADMIN;
+    $("tab-reg").hidden = $("tab-ov").hidden = !avdId;
     view("app");
     $("dato").valueAsDate = new Date();
-    ST = null; tab("reg"); hist();
+    ST = null; tab(avdId ? "reg" : "adm"); if (avdId) hist();
   } catch { if (S) { logout(); show($("lmsg"), "Kunne ikke hente avdeling.", "err"); } }
 }
 
 async function hist(){
   try {
-    const d = await (await api("frivillig_timer?select=arrangement,dato,antall_ressurser,timer_per_ressurs,totalt_timer,frivillig_bilde(count)&order=opprettet.desc&limit=5")).json();
+    const d = await (await api("frivillig_timer?select=arrangement,dato,antall_ressurser,timer_per_ressurs,totalt_timer,frivillig_bilde(count)&avdeling_id=eq." + avdId + "&order=opprettet.desc&limit=5")).json();
     $("hist").innerHTML = d.length ? d.map(h => {
       const n = (h.frivillig_bilde && h.frivillig_bilde[0] && h.frivillig_bilde[0].count) || 0;
       return `<div class="item"><div>${esc(h.arrangement)}<small>${esc(h.dato)} · ${h.antall_ressurser} × ${h.timer_per_ressurs} t${n ? " · " + n + (n > 1 ? " bilder" : " bilde") : ""}</small></div><b>${h.totalt_timer} t</b></div>`;
@@ -213,9 +298,9 @@ async function hist(){
 
 /* ---------- Faner ---------- */
 function tab(t){
-  $("p-reg").hidden = t !== "reg"; $("p-ov").hidden = t !== "ov";
-  $("tab-reg").classList.toggle("on", t === "reg"); $("tab-ov").classList.toggle("on", t === "ov");
+  for (const k of ["reg", "ov", "adm"]) { $("p-" + k).hidden = t !== k; $("tab-" + k).classList.toggle("on", t === k); }
   if (t === "ov") loadStats();
+  if (t === "adm") loadAdmin();
 }
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => tab(b.dataset.t));
 document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
@@ -235,13 +320,14 @@ function myId(){
 async function loadStats(){
   show($("omsg"), "", "");
   try {
-    ST = await (await api("v_maned_oppsummering?select=bruker_id,maned,timer")).json();
+    ST = await (await api("v_maned_oppsummering?select=avdeling_id,bruker_id,maned,timer")).json();
     renderStats();
   } catch { if (S) show($("omsg"), "Kunne ikke hente oversikt.", "err"); }
 }
 function sums(mineOnly){
   const m = new Map(), me = myId();
   for (const r of ST) {
+    if (r.avdeling_id !== avdId) continue;
     if (mineOnly && r.bruker_id !== me) continue;
     const k = String(r.maned).slice(0, 7);
     m.set(k, (m.get(k) || 0) + Number(r.timer));
@@ -293,6 +379,201 @@ function chart(vals, keys, kind){
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${kind === "bar" ? "Timer per måned" : "Akkumulert antall timer"}">${g}${b}${xl}</svg>`;
 }
 
+/* ---------- Admin ---------- */
+let AVD = [], BRUKERE = [], redig = null, RAP = null, TH = {}, adminSub = "rap", adminKlar = false;
+const avNavn = id => (AVD.find(a => a.id === id) || {}).navn || "Ukjent";
+const nbilder = r => (r.frivillig_bilde && r.frivillig_bilde[0] && r.frivillig_bilde[0].count) || 0;
+
+async function fn(handling, data = {}, retry = true){
+  const r = await fetch(SUPABASE_URL + "/functions/v1/admin-brukere", {
+    method: "POST",
+    headers: {apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + S.access, "Content-Type": "application/json"},
+    body: JSON.stringify({handling, ...data})
+  });
+  if (r.status === 401 && retry && S.refresh) {
+    try { S = await auth("token?grant_type=refresh_token", {refresh_token: S.refresh}); save(S); } catch { logout(); throw new Error("utlopt"); }
+    return fn(handling, data, false);
+  }
+  if (r.status === 404) throw new Error("Funksjonen «admin-brukere» er ikke installert i Supabase (se veiledningen).");
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.feil || "Feil " + r.status);
+  return j;
+}
+
+async function loadAvd(){ AVD = await (await api("avdeling?select=id,navn,aktiv&order=navn")).json(); }
+function fillAvdSelects(){
+  const r = $("rav").value, b = $("bav").value;
+  $("rav").innerHTML = '<option value="">Alle avdelinger</option>' + AVD.map(a => `<option value="${a.id}">${esc(a.navn)}${a.aktiv ? "" : " (deaktivert)"}</option>`).join("");
+  $("bav").innerHTML = '<option value="">Ingen (kun administrator)</option>' + AVD.map(a => `<option value="${a.id}">${esc(a.navn)}${a.aktiv ? "" : " (deaktivert)"}</option>`).join("");
+  $("rav").value = r; $("bav").value = b;
+}
+async function loadAdmin(){
+  try {
+    await loadAvd(); fillAvdSelects();
+    if (!adminKlar) { const n = new Date(); $("rfra").value = n.getFullYear() + "-01"; $("rtil").value = n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0"); adminKlar = true; }
+    sub(adminSub);
+  } catch { if (S) show($("rmsg2"), "Kunne ikke hente avdelinger.", "err"); }
+}
+function sub(n){
+  adminSub = n;
+  for (const k of ["rap", "bru", "avd"]) { $("a-" + k).hidden = k !== n; document.querySelector(`.sub button[data-a="${k}"]`).classList.toggle("on", k === n); }
+  if (n === "bru") loadBrukere();
+  if (n === "avd") renderAvd();
+}
+document.querySelectorAll(".sub button").forEach(b => b.onclick = () => sub(b.dataset.a));
+
+/* --- Rapporter for alle avdelinger --- */
+$("rf2").onsubmit = async e => {
+  e.preventDefault(); show($("rmsg2"), "", "");
+  const fra = $("rfra").value, til = $("rtil").value, av = $("rav").value;
+  if (!fra || !til || fra > til) { show($("rmsg2"), "Velg en gyldig periode.", "err"); return; }
+  const [ty, tm] = til.split("-").map(Number), slutt = `${til}-${String(new Date(ty, tm, 0).getDate()).padStart(2, "0")}`;
+  $("rbtn2").disabled = true;
+  try {
+    let q = `frivillig_timer?select=id,avdeling_id,arrangement,dato,antall_ressurser,timer_per_ressurs,totalt_timer,kommentar,frivillig_bilde(count)&dato=gte.${fra}-01&dato=lte.${slutt}&order=dato.desc,id.desc&limit=1000`;
+    if (av) q += "&avdeling_id=eq." + av;
+    RAP = {rows: await (await api(q)).json(), av, fra, til}; TH = {};
+    visRapport();
+    if ($("rall").checked) bilderAlle();
+  } catch { if (S) show($("rmsg2"), "Kunne ikke hente rapporten.", "err"); }
+  $("rbtn2").disabled = false;
+};
+
+function visRapport(){
+  const {rows, av, fra, til} = RAP, num = r => Number(r.totalt_timer);
+  const tot = rows.reduce((a, r) => a + num(r), 0), nb_ = rows.reduce((a, r) => a + nbilder(r), 0);
+  const arr = new Set(rows.map(r => r.avdeling_id + "|" + r.arrangement.trim().toLowerCase())).size;
+  const mnd = new Map(); rows.forEach(r => { const k = r.dato.slice(0, 7); mnd.set(k, (mnd.get(k) || 0) + num(r)); });
+  const keys = []; let [y, m] = fra.split("-").map(Number);
+  while (y + "-" + String(m).padStart(2, "0") <= til) { keys.push(y + "-" + String(m).padStart(2, "0")); if (++m > 12) { m = 1; y++; } }
+  const vals = keys.map(k => mnd.get(k) || 0); let run = 0; const cum = vals.map(v => (run += v));
+  const n = Math.min(12, keys.length), kk = keys.slice(-n);
+
+  let html = `<div class="rh"><h2>Rapport – ${av ? esc(avNavn(+av)) : "alle avdelinger"}</h2><button type="button" class="sec sm noprint" id="rprint">Skriv ut / lagre som PDF</button></div>
+    <div class="hint" style="margin:2px 0 12px">${lab(fra)} – ${lab(til)}</div>
+    <div class="kpis"><div class="kpi"><span>Timer totalt</span><b>${fmt(tot)}</b></div><div class="kpi"><span>Registreringer</span><b>${rows.length}</b></div>
+    <div class="kpi"><span>Arrangementer</span><b>${arr}</b></div><div class="kpi"><span>Bilder</span><b>${nb_}</b></div></div>`;
+  if (rows.length >= 1000) html += '<div class="msg err" style="display:block;margin-bottom:12px">Viser de 1000 nyeste registreringene. Velg en kortere periode for full oversikt.</div>';
+
+  if (!av) {
+    const pa = new Map(AVD.filter(a => a.aktiv).map(a => [a.id, {t: 0, n: 0, x: 0}]));
+    rows.forEach(r => { const o = pa.get(r.avdeling_id) || {t: 0, n: 0, x: 0}; o.t += num(r); o.n++; o.x += r.antall_ressurser; pa.set(r.avdeling_id, o); });
+    const lst = [...pa.entries()].sort((a, b) => b[1].t - a[1].t), mx = Math.max(...lst.map(l => l[1].t), 1);
+    html += `<div class="card"><strong>Per avdeling (sammenstilt)</strong><table class="tv"><tr><th>Avdeling</th><th>Timer</th><th>Andel</th><th>Reg.</th></tr>` +
+      lst.map(([id, o]) => `<tr><td>${esc(avNavn(id))}<div class="bar-h"><i style="width:${(o.t / mx * 100).toFixed(1)}%"></i></div></td><td>${fmt(o.t)}</td><td>${tot ? Math.round(o.t / tot * 100) : 0} %</td><td>${o.n}</td></tr>`).join("") +
+      `<tr><td><b>Sum</b></td><td><b>${fmt(tot)}</b></td><td><b>${tot ? "100 %" : "–"}</b></td><td><b>${rows.length}</b></td></tr></table></div>`;
+  }
+  html += `<div class="card"><strong>Timer per måned</strong>${chart(vals.slice(-n), kk, "bar")}</div>
+    <div class="card"><strong>Akkumulert antall timer</strong>${chart(cum.slice(-n), kk, "line")}</div>
+    <div class="card"><strong>Måned for måned</strong><table class="tv"><tr><th>Måned</th><th>Timer</th><th>Akkumulert</th></tr>` +
+    keys.map((k, i) => `<tr><td>${lab(k)}</td><td>${fmt(vals[i])}</td><td>${fmt(cum[i])}</td></tr>`).reverse().join("") + `</table></div>`;
+  html += `<div class="card"><strong>Registreringer${rows.length > 200 ? " (200 nyeste)" : ""}</strong>` + (rows.length ? rows.slice(0, 200).map(r => {
+    const nbld = nbilder(r);
+    return `<div class="item"><div>${esc(r.arrangement)}<small>${esc(r.dato)}${av ? "" : " · " + esc(avNavn(r.avdeling_id))} · ${r.antall_ressurser} × ${r.timer_per_ressurs} t${r.kommentar ? " · " + esc(r.kommentar) : ""}</small><div class="mini" id="m${r.id}"></div></div>
+      <div style="text-align:right"><b>${fmt(r.totalt_timer)} t</b>${nbld ? `<br><button type="button" class="lnk noprint" data-b="${r.id}">${nbld} ${nbld > 1 ? "bilder" : "bilde"}</button>` : ""}</div></div>`;
+  }).join("") : '<div class="item"><small>Ingen registreringer i perioden</small></div>') + "</div>";
+  $("rap-ut").innerHTML = html;
+}
+
+function miniHtml(id){ return (TH[id] || []).map(t => `<img alt="Bilde fra aktiviteten" src="data:image/jpeg;base64,${esc(t)}">`).join(""); }
+async function bildeFor(id){
+  const el = $("m" + id); if (!el) return;
+  if (el.innerHTML) { el.innerHTML = ""; return; }
+  if (!TH[id]) TH[id] = (await (await api(`frivillig_bilde?timer_id=eq.${id}&select=miniatyr&order=rekkefolge`)).json()).map(x => x.miniatyr).filter(Boolean);
+  el.innerHTML = miniHtml(id);
+}
+async function bilderAlle(){
+  if (!RAP) return;
+  const ids = RAP.rows.slice(0, 200).filter(r => nbilder(r)).map(r => r.id).slice(0, 100);
+  if (!$("rall").checked) { ids.forEach(id => { const e = $("m" + id); if (e) e.innerHTML = ""; }); return; }
+  try {
+    for (let i = 0; i < ids.length; i += 25) {
+      const d = await (await api(`frivillig_bilde?timer_id=in.(${ids.slice(i, i + 25).join(",")})&select=timer_id,miniatyr&order=timer_id,rekkefolge`)).json();
+      d.forEach(x => { if (x.miniatyr) (TH[x.timer_id] = TH[x.timer_id] || []).push(x.miniatyr); });
+    }
+    ids.forEach(id => { const e = $("m" + id); if (e) e.innerHTML = miniHtml(id); });
+  } catch { if (S) show($("rmsg2"), "Kunne ikke hente bildene.", "err"); }
+}
+$("rall").onchange = () => { if ($("rall").checked) { TH = {}; } bilderAlle(); };
+$("rap-ut").onclick = e => {
+  if (e.target.closest("#rprint")) { window.print(); return; }
+  const b = e.target.closest("button[data-b]"); if (b) bildeFor(b.dataset.b).catch(() => {});
+};
+
+/* --- Brukere --- */
+const sist = d => d ? new Date(d).toLocaleDateString("nb-NO") : "aldri";
+async function loadBrukere(){
+  show($("bmsg"), "", ""); $("bliste").innerHTML = '<div class="item"><small>Laster…</small></div>';
+  try { BRUKERE = (await fn("liste")).brukere; renderBrukere(); }
+  catch (e) { $("bliste").innerHTML = ""; if (S) show($("bmsg"), e.message, "err"); }
+}
+function renderBrukere(){
+  $("bliste").innerHTML = BRUKERE.length ? BRUKERE.map(b => `<div class="item"><div><b style="word-break:break-all">${esc(b.epost)}</b>
+    <small>${b.avdeling_id ? esc(avNavn(b.avdeling_id)) : "Ingen avdeling"} · ${b.er_admin ? "Administrator" : "Bruker"}${b.deaktivert ? " · Deaktivert" : ""} · sist innlogget ${sist(b.sist_innlogget)}</small></div>
+    <button type="button" class="sec sm" data-id="${esc(b.id)}">Rediger</button></div>`).join("") : '<div class="item"><small>Ingen brukere</small></div>';
+}
+function bform(b){
+  redig = b || null; $("bf").hidden = false; $("btitle").textContent = b ? "Rediger bruker" : "Ny bruker";
+  $("bem").value = b ? b.epost : ""; $("bem").readOnly = !!b;
+  $("bpw").value = ""; $("bpw").required = !b; $("bpw").placeholder = b ? "La stå tom for å beholde" : "Minst 8 tegn";
+  $("bav").value = b && b.avdeling_id ? String(b.avdeling_id) : ""; $("badm").checked = !!(b && b.er_admin);
+  $("bdea").checked = !!(b && b.deaktivert); $("bdearad").hidden = !b; $("bslett").hidden = !b;
+  show($("bmsg2"), "", ""); $("bf").scrollIntoView({behavior: "smooth", block: "nearest"});
+}
+$("bny").onclick = () => bform(null);
+$("bavbryt").onclick = () => { $("bf").hidden = true; redig = null; };
+$("bliste").onclick = e => { const b = e.target.closest("button[data-id]"); if (b) bform(BRUKERE.find(x => x.id === b.dataset.id)); };
+$("bgen").onclick = () => {
+  const tegn = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", a = crypto.getRandomValues(new Uint32Array(12));
+  $("bpw").value = [...a].map(x => tegn[x % tegn.length]).join("");
+};
+$("bf").onsubmit = async e => {
+  e.preventDefault(); $("blagre").disabled = true; show($("bmsg2"), "", "");
+  const avd = $("bav").value ? +$("bav").value : null, pw = $("bpw").value, erAdm = $("badm").checked;
+  try {
+    let ok;
+    if (redig) {
+      const d = {bruker_id: redig.id, avdeling_id: avd, er_admin: erAdm, deaktivert: $("bdea").checked}; if (pw) d.passord = pw;
+      await fn("oppdater", d); ok = "Bruker oppdatert." + (pw ? " Nytt passord: " + pw : "");
+    } else {
+      await fn("opprett", {epost: $("bem").value.trim(), passord: pw, avdeling_id: avd, er_admin: erAdm});
+      ok = "Bruker opprettet. Passord: " + pw + " (gi det videre på en trygg måte; brukeren kan bytte det selv).";
+    }
+    $("bf").hidden = true; redig = null; await loadBrukere(); show($("bmsg"), ok, "ok");
+  } catch (er) { if (S) show($("bmsg2"), er.message, "err"); }
+  $("blagre").disabled = false;
+};
+$("bslett").onclick = async () => {
+  if (!redig || !confirm("Slette brukeren " + redig.epost + "? Dette kan ikke angres. Registrerte timer beholdes.")) return;
+  try { await fn("slett", {bruker_id: redig.id}); $("bf").hidden = true; redig = null; await loadBrukere(); show($("bmsg"), "Bruker slettet.", "ok"); }
+  catch (er) { if (S) show($("bmsg2"), er.message, "err"); }
+};
+
+/* --- Avdelinger --- */
+function renderAvd(){
+  $("aliste").innerHTML = AVD.map(a => `<div class="arow" data-id="${a.id}"><input type="text" maxlength="80" value="${esc(a.navn)}" aria-label="Navn">
+    <label class="chk"><input type="checkbox" ${a.aktiv ? "checked" : ""}> Aktiv</label><button type="button" class="sec sm">Lagre</button></div>`).join("");
+}
+$("aliste").onclick = async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const row = b.closest(".arow"), navn = row.querySelector("input[type=text]").value.trim(), aktiv = row.querySelector("input[type=checkbox]").checked;
+  show($("amsg"), "", "");
+  if (!navn) { show($("amsg"), "Navn kan ikke være tomt.", "err"); return; }
+  try {
+    const r = await (await api("avdeling?id=eq." + row.dataset.id, {method: "PATCH", headers: {Prefer: "return=representation"}, body: JSON.stringify({navn, aktiv})})).json();
+    if (!r.length) throw new Error("ingen");
+    await loadAvd(); fillAvdSelects(); renderAvd(); show($("amsg"), "Lagret.", "ok");
+  } catch (er) { if (S) show($("amsg"), er.status === 409 ? "Det finnes allerede en avdeling med dette navnet." : "Kunne ikke lagre.", "err"); }
+};
+$("alegg").onclick = async () => {
+  const navn = $("anavn").value.trim(); show($("amsg"), "", "");
+  if (!navn) { show($("amsg"), "Skriv inn et navn.", "err"); return; }
+  try {
+    await api("avdeling", {method: "POST", headers: {Prefer: "return=minimal"}, body: JSON.stringify({navn})});
+    $("anavn").value = ""; await loadAvd(); fillAvdSelects(); renderAvd(); show($("amsg"), "Avdeling opprettet.", "ok");
+  } catch (er) { if (S) show($("amsg"), er.status === 409 ? "Det finnes allerede en avdeling med dette navnet." : "Kunne ikke opprette avdelingen.", "err"); }
+};
+
 /* ---------- Bilder ---------- */
 const MAXPX = 1280;
 let fotos = [];
@@ -307,7 +588,16 @@ async function shrink(file){
   c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
   if (bmp.close) bmp.close();
   const url = c.toDataURL("image/jpeg", 0.8);
-  return {url, data: url.split(",")[1], name: (file.name || "bilde").replace(/\.[^.]+$/, "") + ".jpg", mime: "image/jpeg"};
+  // Liten miniatyr (maks 30 000 tegn base64) som Power BI kan vise direkte
+  let thumb = "";
+  for (const [px, q] of [[420, .6], [360, .5], [300, .5], [240, .45], [200, .4], [160, .3]]) {
+    const k2 = Math.min(1, px / Math.max(c.width, c.height)), t = document.createElement("canvas");
+    t.width = Math.max(1, Math.round(c.width * k2)); t.height = Math.max(1, Math.round(c.height * k2));
+    t.getContext("2d").drawImage(c, 0, 0, t.width, t.height);
+    thumb = t.toDataURL("image/jpeg", q).split(",")[1];
+    if (thumb.length <= 30000) break;
+  }
+  return {url, data: url.split(",")[1], thumb, name: (file.name || "bilde").replace(/\.[^.]+$/, "") + ".jpg", mime: "image/jpeg"};
 }
 function renderThumbs(){
   $("thumbs").innerHTML = fotos.map((f, i) => `<div class="th"><img src="${f.url}" alt="Bilde ${i + 1}"><button type="button" data-i="${i}" aria-label="Fjern bilde ${i + 1}">×</button></div>`).join("");
@@ -350,7 +640,7 @@ $("f").onsubmit = async e => {
     await api("rpc/registrer_aktivitet", {method: "POST", body: JSON.stringify({
       p_arrangement: $("arr").value.trim(), p_dato: $("dato").value, p_antall: antall, p_timer: timer,
       p_registrert_av: $("av").value.trim() || null, p_kommentar: $("kom").value.trim() || null,
-      p_bilder: fotos.map(f => ({filnavn: f.name, mime: f.mime, data: f.data}))
+      p_bilder: fotos.map(f => ({filnavn: f.name, mime: f.mime, data: f.data, miniatyr: f.thumb}))
     })});
     show($("msg"), `Lagret: ${antall} × ${timer} t = ${fmt(antall * timer)} timer` + (nb ? ` og ${nb} ${nb > 1 ? "bilder" : "bilde"}.` : "."), "ok");
     $("x").value = $("y").value = $("kom").value = ""; fotos = []; renderThumbs(); calc(); ST = null; hist();
