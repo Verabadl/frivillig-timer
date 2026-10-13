@@ -57,6 +57,10 @@ button.sec{background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-
 .tv th{color:var(--mu);font-weight:600;border-top:0}
 button.sm{padding:8px 12px;font-size:.85rem}
 .arow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0}
+.sub{grid-auto-flow:row;grid-template-columns:1fr 1fr}
+.xarr{border-top:1px solid var(--bd);padding:10px 0}
+.xakts{margin:4px 0 0 10px;padding-left:10px;border-left:2px solid var(--bd)}
+.hint a{color:var(--ac);font-weight:600}
 .chk{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.88rem}
 .chk input{width:auto}
 .bar-h{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:4px}
@@ -126,7 +130,10 @@ button.sm{padding:8px 12px;font-size:.85rem}
 
   <div id="p-reg">
     <form id="f">
-      <label>Arrangement<input id="arr" required placeholder="F.eks. Sommerfest"></label>
+      <label>Arrangement<select id="arr" required></select></label>
+      <label id="arrnylbl" hidden>Navn på nytt arrangement<input id="arrny" maxlength="120" placeholder="F.eks. Sommerfest" autocomplete="off"></label>
+      <label>Aktivitet<select id="akt" required disabled><option value="">Velg arrangement først</option></select></label>
+      <label id="aktnylbl" hidden>Navn på ny aktivitet<input id="aktny" maxlength="120" placeholder="F.eks. Standvakt" autocomplete="off"></label>
       <label>Dato<input id="dato" type="date" required></label>
       <div class="row">
         <label>Antall ressurser (x)<input id="x" type="number" inputmode="numeric" min="1" step="1" required></label>
@@ -135,6 +142,15 @@ button.sm{padding:8px 12px;font-size:.85rem}
       <div class="sum">Totalt antall timer<b id="tot">0</b></div>
       <label>Registrert av (valgfritt)<input id="av" autocomplete="name"></label>
       <label>Kommentar (valgfritt)<textarea id="kom" rows="2"></textarea></label>
+      <div id="gpsbox" style="display:grid;gap:8px" hidden>
+        <span class="lbl" id="gpslbl">Sted for aktiviteten</span>
+        <div class="row">
+          <button type="button" class="sec" id="gpsbtn">Bruk min posisjon</button>
+          <button type="button" class="sec" id="gpsclr">Fjern posisjon</button>
+        </div>
+        <label>Koordinater eller kartlenke<input id="gpsinp" placeholder="62.4722, 6.1495 eller lenke fra kart" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <span class="hint" id="gpsinfo">Ikke registrert</span>
+      </div>
       <div style="display:grid;gap:8px">
         <span class="lbl">Bilder fra aktiviteten (inntil 5)</span>
         <div class="row">
@@ -174,6 +190,7 @@ button.sm{padding:8px 12px;font-size:.85rem}
       <button type="button" class="on" data-a="rap">Rapporter</button>
       <button type="button" data-a="bru">Brukere</button>
       <button type="button" data-a="avd">Avdelinger</button>
+      <button type="button" data-a="arr">Arrangement</button>
     </div>
 
     <div id="a-rap">
@@ -213,6 +230,22 @@ button.sm{padding:8px 12px;font-size:.85rem}
         <button type="button" class="sec" id="bslett" style="color:#b42318">Slett bruker</button>
         <div id="bmsg2" class="msg"></div>
       </form>
+    </div>
+
+    <div id="a-arr" hidden>
+      <div class="card">
+        <strong>Arrangement og aktiviteter</strong>
+        <label>Avdeling<select id="xav"></select></label>
+        <div id="xmsg" class="msg"></div>
+        <div id="xliste"></div>
+      </div>
+      <div class="card">
+        <strong>Nytt arrangement</strong>
+        <div class="row" style="grid-template-columns:1fr auto">
+          <input id="xnavn" type="text" placeholder="Navn på arrangement" maxlength="120" aria-label="Navn på nytt arrangement">
+          <button type="button" id="xlegg" class="sm">Legg til</button>
+        </div>
+      </div>
     </div>
 
     <div id="a-avd" hidden>
@@ -265,7 +298,7 @@ async function api(path, opts = {}, retry = true){
     try { S = await auth("token?grant_type=refresh_token", {refresh_token: S.refresh}); save(S); return api(path, opts, false); }
     catch { logout(); throw new Error("utlopt"); }
   }
-  if (!r.ok) { const e = new Error("api"); e.status = r.status; throw e; }
+  if (!r.ok) { const e = new Error("api"); e.status = r.status; try { const j = await r.json(); e.kode = j.code; e.melding = j.message; } catch {} throw e; }
   return r;
 }
 
@@ -274,7 +307,7 @@ function logout(){ S = null; avdId = null; save(null); view("login"); }
 
 async function start(){
   try {
-    const d = await (await api("bruker_avdeling?select=avdeling_id,er_admin,avdeling(navn)&user_id=eq." + myId())).json();
+    const d = await (await api("bruker_avdeling?select=avdeling_id,er_admin,avdeling(navn,gps_modus)&user_id=eq." + myId())).json();
     if (!d.length || (!d[0].avdeling_id && !d[0].er_admin)) { logout(); show($("lmsg"), "Brukeren er ikke koblet til en avdeling. Kontakt administrator.", "err"); return; }
     avdId = d[0].avdeling_id; ADMIN = !!d[0].er_admin;
     $("avdnavn").textContent = (d[0].avdeling ? d[0].avdeling.navn : "") + (d[0].avdeling && ADMIN ? " · " : "") + (ADMIN ? "Administrator" : "");
@@ -282,16 +315,17 @@ async function start(){
     $("tab-reg").hidden = $("tab-ov").hidden = !avdId;
     view("app");
     $("dato").valueAsDate = new Date();
-    ST = null; tab(avdId ? "reg" : "adm"); if (avdId) hist();
+    GPSM = (d[0].avdeling && d[0].avdeling.gps_modus) || "av"; pos = null; setupGps();
+    ST = null; tab(avdId ? "reg" : "adm"); if (avdId) { hist(); loadKatalog(); }
   } catch { if (S) { logout(); show($("lmsg"), "Kunne ikke hente avdeling.", "err"); } }
 }
 
 async function hist(){
   try {
-    const d = await (await api("frivillig_timer?select=arrangement,dato,antall_ressurser,timer_per_ressurs,totalt_timer,frivillig_bilde(count)&avdeling_id=eq." + avdId + "&order=opprettet.desc&limit=5")).json();
+    const d = await (await api("frivillig_timer?select=arrangement,aktivitet,dato,antall_ressurser,timer_per_ressurs,totalt_timer,frivillig_bilde(count)&avdeling_id=eq." + avdId + "&order=opprettet.desc&limit=5")).json();
     $("hist").innerHTML = d.length ? d.map(h => {
       const n = (h.frivillig_bilde && h.frivillig_bilde[0] && h.frivillig_bilde[0].count) || 0;
-      return `<div class="item"><div>${esc(h.arrangement)}<small>${esc(h.dato)} · ${h.antall_ressurser} × ${h.timer_per_ressurs} t${n ? " · " + n + (n > 1 ? " bilder" : " bilde") : ""}</small></div><b>${h.totalt_timer} t</b></div>`;
+      return `<div class="item"><div>${esc(h.arrangement)} › ${esc(h.aktivitet)}<small>${esc(h.dato)} · ${h.antall_ressurser} × ${h.timer_per_ressurs} t${n ? " · " + n + (n > 1 ? " bilder" : " bilde") : ""}</small></div><b>${h.totalt_timer} t</b></div>`;
     }).join("") : '<div class="item"><small>Ingen registreringer ennå</small></div>';
   } catch { $("hist").innerHTML = ""; }
 }
@@ -400,12 +434,13 @@ async function fn(handling, data = {}, retry = true){
   return j;
 }
 
-async function loadAvd(){ AVD = await (await api("avdeling?select=id,navn,aktiv&order=navn")).json(); }
+async function loadAvd(){ AVD = await (await api("avdeling?select=id,navn,aktiv,gps_modus&order=navn")).json(); }
 function fillAvdSelects(){
-  const r = $("rav").value, b = $("bav").value;
+  const r = $("rav").value, b = $("bav").value, x = $("xav").value;
   $("rav").innerHTML = '<option value="">Alle avdelinger</option>' + AVD.map(a => `<option value="${a.id}">${esc(a.navn)}${a.aktiv ? "" : " (deaktivert)"}</option>`).join("");
   $("bav").innerHTML = '<option value="">Ingen (kun administrator)</option>' + AVD.map(a => `<option value="${a.id}">${esc(a.navn)}${a.aktiv ? "" : " (deaktivert)"}</option>`).join("");
-  $("rav").value = r; $("bav").value = b;
+  $("xav").innerHTML = AVD.map(a => `<option value="${a.id}">${esc(a.navn)}${a.aktiv ? "" : " (deaktivert)"}</option>`).join("");
+  $("rav").value = r; $("bav").value = b; if (x) $("xav").value = x;
 }
 async function loadAdmin(){
   try {
@@ -416,9 +451,10 @@ async function loadAdmin(){
 }
 function sub(n){
   adminSub = n;
-  for (const k of ["rap", "bru", "avd"]) { $("a-" + k).hidden = k !== n; document.querySelector(`.sub button[data-a="${k}"]`).classList.toggle("on", k === n); }
+  for (const k of ["rap", "bru", "avd", "arr"]) { $("a-" + k).hidden = k !== n; document.querySelector(`.sub button[data-a="${k}"]`).classList.toggle("on", k === n); }
   if (n === "bru") loadBrukere();
   if (n === "avd") renderAvd();
+  if (n === "arr") loadArr();
 }
 document.querySelectorAll(".sub button").forEach(b => b.onclick = () => sub(b.dataset.a));
 
@@ -430,7 +466,7 @@ $("rf2").onsubmit = async e => {
   const [ty, tm] = til.split("-").map(Number), slutt = `${til}-${String(new Date(ty, tm, 0).getDate()).padStart(2, "0")}`;
   $("rbtn2").disabled = true;
   try {
-    let q = `frivillig_timer?select=id,avdeling_id,arrangement,dato,antall_ressurser,timer_per_ressurs,totalt_timer,kommentar,frivillig_bilde(count)&dato=gte.${fra}-01&dato=lte.${slutt}&order=dato.desc,id.desc&limit=1000`;
+    let q = `frivillig_timer?select=id,avdeling_id,arrangement,aktivitet,dato,antall_ressurser,timer_per_ressurs,totalt_timer,kommentar,breddegrad,lengdegrad,frivillig_bilde(count)&dato=gte.${fra}-01&dato=lte.${slutt}&order=dato.desc,id.desc&limit=1000`;
     if (av) q += "&avdeling_id=eq." + av;
     RAP = {rows: await (await api(q)).json(), av, fra, til}; TH = {};
     visRapport();
@@ -469,7 +505,8 @@ function visRapport(){
     keys.map((k, i) => `<tr><td>${lab(k)}</td><td>${fmt(vals[i])}</td><td>${fmt(cum[i])}</td></tr>`).reverse().join("") + `</table></div>`;
   html += `<div class="card"><strong>Registreringer${rows.length > 200 ? " (200 nyeste)" : ""}</strong>` + (rows.length ? rows.slice(0, 200).map(r => {
     const nbld = nbilder(r);
-    return `<div class="item"><div>${esc(r.arrangement)}<small>${esc(r.dato)}${av ? "" : " · " + esc(avNavn(r.avdeling_id))} · ${r.antall_ressurser} × ${r.timer_per_ressurs} t${r.kommentar ? " · " + esc(r.kommentar) : ""}</small><div class="mini" id="m${r.id}"></div></div>
+    const sted = r.breddegrad != null ? ` · <a href="https://www.openstreetmap.org/?mlat=${+r.breddegrad}&mlon=${+r.lengdegrad}#map=17/${+r.breddegrad}/${+r.lengdegrad}" target="_blank" rel="noopener">${(+r.breddegrad).toFixed(5)}, ${(+r.lengdegrad).toFixed(5)}</a>` : "";
+    return `<div class="item"><div>${esc(r.arrangement)} › ${esc(r.aktivitet || "")}<small>${esc(r.dato)}${av ? "" : " · " + esc(avNavn(r.avdeling_id))} · ${r.antall_ressurser} × ${r.timer_per_ressurs} t${r.kommentar ? " · " + esc(r.kommentar) : ""}${sted}</small><div class="mini" id="m${r.id}"></div></div>
       <div style="text-align:right"><b>${fmt(r.totalt_timer)} t</b>${nbld ? `<br><button type="button" class="lnk noprint" data-b="${r.id}">${nbld} ${nbld > 1 ? "bilder" : "bilde"}</button>` : ""}</div></div>`;
   }).join("") : '<div class="item"><small>Ingen registreringer i perioden</small></div>') + "</div>";
   $("rap-ut").innerHTML = html;
@@ -550,17 +587,19 @@ $("bslett").onclick = async () => {
 };
 
 /* --- Avdelinger --- */
+const GPSTXT = {av: "Posisjon: av", valgfri: "Posisjon: valgfri", pakrevd: "Posisjon: påkrevd"};
 function renderAvd(){
-  $("aliste").innerHTML = AVD.map(a => `<div class="arow" data-id="${a.id}"><input type="text" maxlength="80" value="${esc(a.navn)}" aria-label="Navn">
+  $("aliste").innerHTML = AVD.map(a => `<div class="arow" data-id="${a.id}"><input type="text" maxlength="80" value="${esc(a.navn)}" aria-label="Navn" style="grid-column:1/-1">
+    <select aria-label="Posisjon (GPS)">${Object.keys(GPSTXT).map(k => opt(k, GPSTXT[k], (a.gps_modus || "av") === k)).join("")}</select>
     <label class="chk"><input type="checkbox" ${a.aktiv ? "checked" : ""}> Aktiv</label><button type="button" class="sec sm">Lagre</button></div>`).join("");
 }
 $("aliste").onclick = async e => {
   const b = e.target.closest("button"); if (!b) return;
-  const row = b.closest(".arow"), navn = row.querySelector("input[type=text]").value.trim(), aktiv = row.querySelector("input[type=checkbox]").checked;
+  const row = b.closest(".arow"), navn = row.querySelector("input[type=text]").value.trim(), aktiv = row.querySelector("input[type=checkbox]").checked, gps_modus = row.querySelector("select").value;
   show($("amsg"), "", "");
   if (!navn) { show($("amsg"), "Navn kan ikke være tomt.", "err"); return; }
   try {
-    const r = await (await api("avdeling?id=eq." + row.dataset.id, {method: "PATCH", headers: {Prefer: "return=representation"}, body: JSON.stringify({navn, aktiv})})).json();
+    const r = await (await api("avdeling?id=eq." + row.dataset.id, {method: "PATCH", headers: {Prefer: "return=representation"}, body: JSON.stringify({navn, aktiv, gps_modus})})).json();
     if (!r.length) throw new Error("ingen");
     await loadAvd(); fillAvdSelects(); renderAvd(); show($("amsg"), "Lagret.", "ok");
   } catch (er) { if (S) show($("amsg"), er.status === 409 ? "Det finnes allerede en avdeling med dette navnet." : "Kunne ikke lagre.", "err"); }
@@ -572,6 +611,54 @@ $("alegg").onclick = async () => {
     await api("avdeling", {method: "POST", headers: {Prefer: "return=minimal"}, body: JSON.stringify({navn})});
     $("anavn").value = ""; await loadAvd(); fillAvdSelects(); renderAvd(); show($("amsg"), "Avdeling opprettet.", "ok");
   } catch (er) { if (S) show($("amsg"), er.status === 409 ? "Det finnes allerede en avdeling med dette navnet." : "Kunne ikke opprette avdelingen.", "err"); }
+};
+
+/* --- Arrangement og aktiviteter (admin) --- */
+let XARR = [];
+async function loadArr(){
+  show($("xmsg"), "", "");
+  if (!$("xav").value && AVD.length) $("xav").value = AVD[0].id;
+  if (!$("xav").value) { $("xliste").innerHTML = '<div class="item"><small>Opprett en avdeling først.</small></div>'; return; }
+  try {
+    XARR = await (await api("arrangement?avdeling_id=eq." + $("xav").value + "&select=id,navn,aktiv,aktivitet(id,navn,aktiv)&aktivitet.order=navn&order=navn")).json();
+    renderArr();
+  } catch { if (S) show($("xmsg"), "Kunne ikke hente arrangementene.", "err"); }
+}
+function renderArr(){
+  $("xliste").innerHTML = XARR.length ? XARR.map(a => `<div class="xarr" data-arr="${a.id}">
+    <div class="arow" data-t="arrangement" data-id="${a.id}"><input type="text" maxlength="120" value="${esc(a.navn)}" aria-label="Arrangement" style="font-weight:700">
+      <label class="chk"><input type="checkbox" ${a.aktiv ? "checked" : ""}> Aktiv</label><button type="button" class="sec sm" data-x="lagre">Lagre</button></div>
+    <div class="xakts">${(a.aktivitet || []).map(k => `<div class="arow" data-t="aktivitet" data-id="${k.id}"><input type="text" maxlength="120" value="${esc(k.navn)}" aria-label="Aktivitet">
+      <label class="chk"><input type="checkbox" ${k.aktiv ? "checked" : ""}> Aktiv</label><button type="button" class="sec sm" data-x="lagre">Lagre</button></div>`).join("")}
+      <div class="arow"><input type="text" maxlength="120" class="nyakt" placeholder="Ny aktivitet" aria-label="Ny aktivitet"><span></span><button type="button" class="sm" data-x="ny" data-arr="${a.id}">Legg til</button></div>
+    </div></div>`).join("") : '<div class="item"><small>Ingen arrangement ennå. Brukerne kan også opprette dem når de registrerer timer.</small></div>';
+}
+$("xav").onchange = loadArr;
+const dupTxt = er => er && er.status === 409 ? "Dette navnet finnes allerede." : "Kunne ikke lagre.";
+$("xliste").onclick = async e => {
+  const b = e.target.closest("button[data-x]"); if (!b) return; show($("xmsg"), "", "");
+  try {
+    if (b.dataset.x === "lagre") {
+      const row = b.closest(".arow"), navn = row.querySelector("input[type=text]").value.trim(), aktiv = row.querySelector("input[type=checkbox]").checked;
+      if (!navn) { show($("xmsg"), "Navn kan ikke være tomt.", "err"); return; }
+      const r = await (await api(row.dataset.t + "?id=eq." + row.dataset.id, {method: "PATCH", headers: {Prefer: "return=representation"}, body: JSON.stringify({navn, aktiv})})).json();
+      if (!r.length) throw new Error("ingen");
+      await loadArr(); show($("xmsg"), "Lagret.", "ok");
+    } else {
+      const navn = b.closest(".arow").querySelector(".nyakt").value.trim();
+      if (!navn) { show($("xmsg"), "Skriv inn navn på aktiviteten.", "err"); return; }
+      await api("aktivitet", {method: "POST", headers: {Prefer: "return=minimal"}, body: JSON.stringify({arrangement_id: +b.dataset.arr, navn})});
+      await loadArr(); show($("xmsg"), "Aktivitet opprettet.", "ok");
+    }
+  } catch (er) { if (S) show($("xmsg"), dupTxt(er), "err"); }
+};
+$("xlegg").onclick = async () => {
+  const navn = $("xnavn").value.trim(); show($("xmsg"), "", "");
+  if (!navn) { show($("xmsg"), "Skriv inn navn på arrangementet.", "err"); return; }
+  try {
+    await api("arrangement", {method: "POST", headers: {Prefer: "return=minimal"}, body: JSON.stringify({avdeling_id: +$("xav").value, navn})});
+    $("xnavn").value = ""; await loadArr(); show($("xmsg"), "Arrangement opprettet. Legg til aktiviteter under det.", "ok");
+  } catch (er) { if (S) show($("xmsg"), dupTxt(er), "err"); }
 };
 
 /* ---------- Bilder ---------- */
@@ -634,18 +721,118 @@ const calc = () => $("tot").textContent = ((+$("x").value || 0) * (+$("y").value
 $("x").oninput = $("y").oninput = calc;
 
 $("f").onsubmit = async e => {
-  e.preventDefault(); $("btn").disabled = true; $("btn").textContent = "Lagrer…"; show($("msg"), "", "");
+  e.preventDefault(); show($("msg"), "", "");
+  const av = $("arr").value, ak = $("akt").value, nyArr = $("arrny").value.trim(), nyAkt = $("aktny").value.trim();
+  if (!av || (av === NY && !nyArr)) { show($("msg"), "Velg eller skriv inn arrangement.", "err"); return; }
+  if (!ak || (ak === NY && !nyAkt)) { show($("msg"), "Velg eller skriv inn aktivitet.", "err"); return; }
+  if (GPSM === "pakrevd" && !pos) { show($("msg"), "Posisjon må registreres (bruk posisjonen din eller skriv inn koordinater).", "err"); return; }
+  $("btn").disabled = true; $("btn").textContent = "Lagrer…";
   const antall = +$("x").value, timer = +$("y").value, nb = fotos.length;
+  const arrNavn = av === NY ? nyArr : $("arr").selectedOptions[0].textContent, aktNavn = ak === NY ? nyAkt : $("akt").selectedOptions[0].textContent;
   try {
     await api("rpc/registrer_aktivitet", {method: "POST", body: JSON.stringify({
-      p_arrangement: $("arr").value.trim(), p_dato: $("dato").value, p_antall: antall, p_timer: timer,
+      p_arrangement_id: av === NY ? null : +av, p_arrangement_navn: av === NY ? nyArr : null,
+      p_aktivitet_id: ak === NY ? null : +ak, p_aktivitet_navn: ak === NY ? nyAkt : null,
+      p_dato: $("dato").value, p_antall: antall, p_timer: timer,
       p_registrert_av: $("av").value.trim() || null, p_kommentar: $("kom").value.trim() || null,
-      p_bilder: fotos.map(f => ({filnavn: f.name, mime: f.mime, data: f.data, miniatyr: f.thumb}))
+      p_bilder: fotos.map(f => ({filnavn: f.name, mime: f.mime, data: f.data, miniatyr: f.thumb})),
+      p_breddegrad: GPSM !== "av" && pos ? pos.lat : null, p_lengdegrad: GPSM !== "av" && pos ? pos.lng : null,
+      p_noyaktighet: GPSM !== "av" && pos ? pos.acc : null, p_posisjon_kilde: GPSM !== "av" && pos ? pos.kilde : null
     })});
     show($("msg"), `Lagret: ${antall} × ${timer} t = ${fmt(antall * timer)} timer` + (nb ? ` og ${nb} ${nb > 1 ? "bilder" : "bilde"}.` : "."), "ok");
-    $("x").value = $("y").value = $("kom").value = ""; fotos = []; renderThumbs(); calc(); ST = null; hist();
-  } catch { if (S) show($("msg"), "Kunne ikke lagre. Sjekk tilkoblingen og prøv igjen.", "err"); }
+    $("x").value = $("y").value = $("kom").value = ""; $("arrny").value = $("aktny").value = "";
+    fotos = []; renderThumbs(); calc(); ST = null; hist(); setPos(null); $("gpsinp").value = "";
+    await loadKatalog(arrNavn, aktNavn);   // nye navn dukker opp i listene; valget beholdes
+  } catch (er) { if (S) show($("msg"), er && er.kode === "P0001" && er.melding ? er.melding + "." : "Kunne ikke lagre. Sjekk tilkoblingen og prøv igjen.", "err"); }
   $("btn").disabled = false; $("btn").textContent = "Lagre";
+};
+
+/* ---------- Arrangement og aktivitet ---------- */
+const NY = "__ny";
+let KAT = [], GPSM = "av", pos = null;
+const opt = (v, t, sel) => `<option value="${esc(v)}"${sel ? " selected" : ""}>${esc(t)}</option>`;
+
+async function loadKatalog(velgArr, velgAkt){
+  if (!avdId) return;
+  const behold = velgArr === undefined ? $("arr").value : "";
+  try {
+    KAT = await (await api("arrangement?avdeling_id=eq." + avdId + "&aktiv=eq.true&select=id,navn,aktivitet(id,navn,aktiv)&aktivitet.order=navn&order=navn")).json();
+    KAT.forEach(a => { a.aktivitet = (a.aktivitet || []).filter(k => k.aktiv); });
+  } catch { if (!KAT.length) KAT = []; }
+  $("arr").innerHTML = opt("", "Velg arrangement…") + KAT.map(a => opt(a.id, a.navn)).join("") + opt(NY, "＋ Nytt arrangement…");
+  let v = "";
+  if (velgArr) { const a = KAT.find(x => x.navn.trim().toLowerCase() === velgArr.trim().toLowerCase()); if (a) v = String(a.id); }
+  else if (behold === NY || KAT.some(x => String(x.id) === behold)) v = behold;
+  $("arr").value = v; arrEndret(velgAkt);
+}
+function arrEndret(velgAkt){
+  const v = $("arr").value, ny = v === NY, a = KAT.find(x => String(x.id) === v), forrige = $("akt").value;
+  $("arrnylbl").hidden = !ny; $("arrny").required = ny; if (!ny) $("arrny").value = "";
+  if (!v) { $("akt").innerHTML = opt("", "Velg arrangement først"); $("akt").disabled = true; }
+  else if (ny) { $("akt").innerHTML = opt(NY, "＋ Ny aktivitet…"); $("akt").disabled = true; }
+  else {
+    $("akt").disabled = false;
+    $("akt").innerHTML = opt("", "Velg aktivitet…") + (a ? a.aktivitet : []).map(k => opt(k.id, k.navn)).join("") + opt(NY, "＋ Ny aktivitet…");
+    let k = "";
+    if (velgAkt) { const x = (a ? a.aktivitet : []).find(y => y.navn.trim().toLowerCase() === velgAkt.trim().toLowerCase()); if (x) k = String(x.id); }
+    else if ([...$("akt").options].some(o => o.value === forrige)) k = forrige;
+    $("akt").value = k;
+  }
+  aktEndret();
+}
+function aktEndret(){
+  const ny = $("akt").value === NY;
+  $("aktnylbl").hidden = !ny; $("aktny").required = ny; if (!ny) $("aktny").value = "";
+}
+$("arr").onchange = () => arrEndret(); $("akt").onchange = aktEndret;
+
+/* ---------- Posisjon (GPS / koordinater) – slås av/på av administrator per avdeling ---------- */
+function setupGps(){
+  $("gpsbox").hidden = GPSM === "av";
+  $("gpslbl").textContent = "Sted for aktiviteten " + (GPSM === "pakrevd" ? "(påkrevd)" : "(valgfritt)");
+  $("gpsinp").required = false; visPos();
+}
+function parseKoord(t){
+  t = String(t || "").trim(); if (!t) return null;
+  const m = t.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/) || t.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/)
+    || t.match(/[?&]mlat=(-?[\d.]+)&mlon=(-?[\d.]+)/) || t.match(/#map=\d+\/(-?[\d.]+)\/(-?[\d.]+)/)
+    || t.match(/[?&](?:q|ll|query|destination)=(-?\d+(?:\.\d+)?)(?:,|%2C)\s*(-?\d+(?:\.\d+)?)/i);
+  let a, b;
+  if (m) { a = +m[1]; b = +m[2]; }
+  else {
+    const n = t.match(/-?\d+(?:[.,]\d+)?/g);
+    if (!n || n.length !== 2) return null;
+    [a, b] = n.map(x => +x.replace(",", "."));
+  }
+  if (!isFinite(a) || !isFinite(b) || Math.abs(a) > 90 || Math.abs(b) > 180) return null;
+  return {lat: +a.toFixed(6), lng: +b.toFixed(6)};
+}
+function setPos(p){ pos = p; visPos(); }
+function visPos(){
+  const el = $("gpsinfo");
+  if (!pos) {
+    el.textContent = $("gpsinp").value.trim() ? "Kunne ikke tolke koordinatene. Bruk f.eks. 62.4722, 6.1495 eller en lenke fra Google Maps eller OpenStreetMap."
+      : (GPSM === "pakrevd" ? "Posisjon må registreres." : "Ikke registrert.");
+    return;
+  }
+  el.innerHTML = `Posisjon: ${pos.lat}, ${pos.lng}` + (pos.acc ? ` (±${pos.acc} m)` : "") +
+    ` · <a href="https://www.openstreetmap.org/?mlat=${pos.lat}&mlon=${pos.lng}#map=17/${pos.lat}/${pos.lng}" target="_blank" rel="noopener">Vis i kart</a>`;
+}
+$("gpsinp").oninput = () => { const p = parseKoord($("gpsinp").value); setPos(p ? {...p, acc: null, kilde: "manuell"} : null); };
+$("gpsclr").onclick = () => { $("gpsinp").value = ""; setPos(null); };
+$("gpsbtn").onclick = () => {
+  if (!navigator.geolocation) { $("gpsinfo").textContent = "Enheten støtter ikke posisjon. Skriv inn koordinater i stedet."; return; }
+  $("gpsbtn").disabled = true; $("gpsinfo").textContent = "Henter posisjon…";
+  navigator.geolocation.getCurrentPosition(r => {
+    const lat = +r.coords.latitude.toFixed(6), lng = +r.coords.longitude.toFixed(6);
+    $("gpsinp").value = lat + ", " + lng;
+    setPos({lat, lng, acc: Number.isFinite(r.coords.accuracy) ? Math.round(r.coords.accuracy) : null, kilde: "gps"});
+    $("gpsbtn").disabled = false;
+  }, err => {
+    $("gpsbtn").disabled = false;
+    $("gpsinfo").textContent = err.code === 1 ? "Tilgang til posisjon ble avslått. Gi tillatelse i nettleseren, eller skriv inn koordinater."
+      : "Fant ikke posisjonen. Prøv igjen utendørs, eller skriv inn koordinater.";
+  }, {enableHighAccuracy: true, timeout: 20000, maximumAge: 0});
 };
 
 $("forgot").onclick = () => { $("rem").value = $("em").value; show($("rmsg"), "", ""); view("reset"); };
