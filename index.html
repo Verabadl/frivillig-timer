@@ -57,7 +57,18 @@ button.sec{background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-
 .tv th{color:var(--mu);font-weight:600;border-top:0}
 button.sm{padding:8px 12px;font-size:.85rem}
 .arow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0}
-.sub{grid-auto-flow:row;grid-template-columns:1fr 1fr}
+.sub{grid-auto-flow:row;grid-template-columns:1fr 1fr 1fr}
+.sub button{padding:11px 4px;font-size:.9rem}
+.mx{overflow-x:auto;margin-top:8px}
+.mx .tv{min-width:100%;white-space:nowrap}
+.tv tr.ar1 td{font-weight:700;background:var(--bg)}
+.tv tr.ak td:first-child{padding-left:22px;color:var(--mu)}
+.tv tr.nd td:first-child{font-weight:700}
+.tv tr.av td:first-child{color:var(--mu)}
+.chklist{display:grid;gap:8px;max-height:220px;overflow:auto;border:1px solid var(--bd);border-radius:10px;padding:10px;background:var(--bg)}
+.orgbtn{display:grid;gap:2px;text-align:left;width:100%;padding:16px;font-size:1.05rem}
+.orgbtn small{color:var(--mu);font-weight:400;font-size:.8rem}
+.note{padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--bd);font-size:.85rem;color:var(--mu)}
 .xarr{border-top:1px solid var(--bd);padding:10px 0}
 .xakts{margin:4px 0 0 10px;padding-left:10px;border-left:2px solid var(--bd)}
 .hint a{color:var(--ac);font-weight:600}
@@ -117,11 +128,21 @@ button.sm{padding:8px 12px;font-size:.85rem}
   </form>
 </section>
 
+<section id="orgvelg" hidden>
+  <h1>Velg organisasjon</h1>
+  <div class="card">
+    <span class="hint">Du har tilknytning til flere organisasjoner. Du logger inn i én om gangen, og ser bare data for den du velger.</span>
+    <div id="orgliste" style="display:grid;gap:10px"></div>
+    <div class="links"><button class="lnk" id="orgut" type="button">Logg ut</button></div>
+  </div>
+</section>
+
 <section id="app" hidden>
   <div class="top">
     <div><h1>Frivillige timer</h1><span id="avdnavn"></span></div>
-    <div class="btns"><button class="lnk" id="chpw" type="button">Bytt passord</button><button class="lnk" id="out" type="button">Logg ut</button></div>
+    <div class="btns"><button class="lnk" id="byttorg" type="button" hidden>Bytt org.</button><button class="lnk" id="chpw" type="button">Bytt passord</button><button class="lnk" id="out" type="button">Logg ut</button></div>
   </div>
+  <label id="avdvelgl" hidden style="margin-bottom:12px">Avdeling<select id="avdvelg"></select></label>
   <div class="tabs">
     <button type="button" class="tab on" id="tab-reg" data-t="reg">Registrer</button>
     <button type="button" class="tab" id="tab-ov" data-t="ov">Oversikt</button>
@@ -182,6 +203,7 @@ button.sm{padding:8px 12px;font-size:.85rem}
     <div class="card"><strong>Timer per måned</strong><div id="c1"></div></div>
     <div class="card"><strong>Akkumulert antall timer</strong><div id="c2"></div></div>
     <div class="card"><strong>Måned for måned</strong><div id="tbl"></div></div>
+    <div class="card"><strong>Timer per arrangement</strong><span class="hint">Avdelingen, alle perioder. Aktivitetene er gruppert under arrangementet.</span><div id="arrtbl"></div></div>
     <div id="omsg" class="msg"></div>
   </div>
 
@@ -189,13 +211,15 @@ button.sm{padding:8px 12px;font-size:.85rem}
     <div class="sub noprint">
       <button type="button" class="on" data-a="rap">Rapporter</button>
       <button type="button" data-a="bru">Brukere</button>
+      <button type="button" data-a="org">Organisasjon</button>
       <button type="button" data-a="avd">Avdelinger</button>
       <button type="button" data-a="arr">Arrangement</button>
     </div>
 
     <div id="a-rap">
       <form id="rf2" class="noprint">
-        <label>Avdeling<select id="rav"></select></label>
+        <label>Nivå / område<select id="rnode"></select></label>
+        <label>Avdeling (valgfritt)<select id="rav"></select></label>
         <div class="row">
           <label>Fra måned<input id="rfra" type="month" required></label>
           <label>Til måned<input id="rtil" type="month" required></label>
@@ -216,14 +240,16 @@ button.sm{padding:8px 12px;font-size:.85rem}
       <form id="bf" hidden>
         <strong id="btitle">Ny bruker</strong>
         <label>E-post<input id="bem" type="email" autocomplete="off" required></label>
-        <label>Passord
+        <label>Passord (kun for ny konto)
           <div class="row" style="grid-template-columns:1fr auto">
             <input id="bpw" type="text" autocomplete="off" minlength="8">
             <button type="button" class="sec sm" id="bgen">Lag passord</button>
           </div>
         </label>
-        <label>Avdeling<select id="bav"></select></label>
-        <label class="chk"><input type="checkbox" id="badm"> Administrator</label>
+        <div class="note" id="butenfor" hidden>Brukeren har også tilknytning utenfor ditt område. Du kan bare endre koblingene i ditt eget område. Passord og aktiv/deaktivert kan du ikke endre.</div>
+        <div style="display:grid;gap:6px"><span class="lbl">Avdelinger (bruker)</span><div class="chklist" id="bavd"></div></div>
+        <div style="display:grid;gap:6px"><span class="lbl">Administrator for nivå (gjelder nivået og alt under)</span><div class="chklist" id="bnod"></div></div>
+        <label class="chk" id="bsuperrad" hidden><input type="checkbox" id="bsuper"> Super-admin (hele løsningen, alle organisasjoner)</label>
         <label class="chk" id="bdearad"><input type="checkbox" id="bdea"> Deaktivert (kan ikke logge inn)</label>
         <button id="blagre">Lagre</button>
         <button type="button" class="sec" id="bavbryt">Avbryt</button>
@@ -248,6 +274,23 @@ button.sm{padding:8px 12px;font-size:.85rem}
       </div>
     </div>
 
+    <div id="a-org" hidden>
+      <div class="card">
+        <strong>Organisasjonsnivåer</strong>
+        <span class="hint">Inntil 5 nivåer. Avdelinger henger under et nivå. Du administrerer nivået du er satt på og alt under. Et nivå kan ikke flyttes etter opprettelse.</span>
+        <div id="omsg2" class="msg"></div>
+        <div id="oliste"></div>
+      </div>
+      <div class="card">
+        <strong>Nytt nivå</strong>
+        <label>Opprettes under<select id="nnode"></select></label>
+        <div class="row" style="grid-template-columns:1fr auto">
+          <input id="nnavn" type="text" placeholder="Navn på nivå" maxlength="80" aria-label="Navn på nytt nivå">
+          <button type="button" id="nlegg" class="sm">Legg til</button>
+        </div>
+      </div>
+    </div>
+
     <div id="a-avd" hidden>
       <div class="card">
         <strong>Avdelinger</strong>
@@ -256,6 +299,7 @@ button.sm{padding:8px 12px;font-size:.85rem}
       </div>
       <div class="card">
         <strong>Ny avdeling</strong>
+        <label>Hører til nivå<select id="anode"></select></label>
         <div class="row" style="grid-template-columns:1fr auto">
           <input id="anavn" type="text" placeholder="Navn på avdeling" maxlength="80" aria-label="Navn på ny avdeling">
           <button type="button" id="alegg" class="sm">Legg til</button>
@@ -272,11 +316,13 @@ const SUPABASE_URL = "https://ndnzjpiyjjydaadqglbs.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kbnpqcGl5amp5ZGFhZHFnbGJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMTA5ODMsImV4cCI6MjEwNjU4Njk4M30.UJETMuVoLRntrOW_a-7NUfi36exPYqRHf3OBc7fIpBg";
 // ====================================================================
 const $ = id => document.getElementById(id);
-const KEY = "ft_session";
-let S = null, avdId = null, ADMIN = false;
+const KEY = "ft_session", ORGKEY = "ft_org", AVDKEY = "ft_avd";
+let S = null, avdId = null, ADMIN = false, ORG = null, TILG = null, AVDS = [], NODER = [], TOPS = [];
 
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } };
 const save = s => { try { s ? localStorage.setItem(KEY, JSON.stringify(s)) : localStorage.removeItem(KEY); } catch {} };
+const lagre = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, String(v)); } catch {} };
+const hent = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function show(el, t, c){ el.textContent = t; el.className = "msg " + c; }
 
@@ -289,10 +335,12 @@ async function auth(path, body){
   return {access: j.access_token, refresh: j.refresh_token};
 }
 
+// Alle kall til databasen sier hvilken organisasjon (rot) brukeren er innlogget i. Databasen kontrollerer at brukeren hører til der.
+const orgHode = () => ORG ? {"x-org": String(ORG)} : {};
 async function api(path, opts = {}, retry = true){
   const r = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
     ...opts,
-    headers: {apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + S.access, "Content-Type": "application/json", ...(opts.headers || {})}
+    headers: {apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + S.access, "Content-Type": "application/json", ...orgHode(), ...(opts.headers || {})}
   });
   if (r.status === 401 && retry) {
     try { S = await auth("token?grant_type=refresh_token", {refresh_token: S.refresh}); save(S); return api(path, opts, false); }
@@ -301,24 +349,68 @@ async function api(path, opts = {}, retry = true){
   if (!r.ok) { const e = new Error("api"); e.status = r.status; try { const j = await r.json(); e.kode = j.code; e.melding = j.message; } catch {} throw e; }
   return r;
 }
+const rpc = (navn, args = {}) => api("rpc/" + navn, {method: "POST", body: JSON.stringify(args)}).then(r => r.json());
 
-function view(n){ for (const i of ["login","reset","setpw","app"]) $(i).hidden = i !== n; }
-function logout(){ S = null; avdId = null; save(null); view("login"); }
+function view(n){ for (const i of ["login","reset","setpw","orgvelg","app"]) $(i).hidden = i !== n; }
+function logout(){ S = null; avdId = null; ORG = null; TILG = null; AVDS = []; NODER = []; TOPS = []; save(null); lagre(ORGKEY, null); lagre(AVDKEY, null); view("login"); }
 
-async function start(){
+// fersk = nettopp logget inn med passord (da velger brukeren organisasjon på nytt hvis det finnes flere)
+async function start(fersk){
   try {
-    const d = await (await api("bruker_avdeling?select=avdeling_id,er_admin,avdeling(navn,gps_modus)&user_id=eq." + myId())).json();
-    if (!d.length || (!d[0].avdeling_id && !d[0].er_admin)) { logout(); show($("lmsg"), "Brukeren er ikke koblet til en avdeling. Kontakt administrator.", "err"); return; }
-    avdId = d[0].avdeling_id; ADMIN = !!d[0].er_admin;
-    $("avdnavn").textContent = (d[0].avdeling ? d[0].avdeling.navn : "") + (d[0].avdeling && ADMIN ? " · " : "") + (ADMIN ? "Administrator" : "");
-    $("tab-adm").hidden = !ADMIN;
-    $("tab-reg").hidden = $("tab-ov").hidden = !avdId;
-    view("app");
-    $("dato").valueAsDate = new Date();
-    GPSM = (d[0].avdeling && d[0].avdeling.gps_modus) || "av"; pos = null; setupGps();
-    ST = null; tab(avdId ? "reg" : "adm"); if (avdId) { hist(); loadKatalog(); }
-  } catch { if (S) { logout(); show($("lmsg"), "Kunne ikke hente avdeling.", "err"); } }
+    ORG = null;
+    TILG = await rpc("min_tilgang");
+    const rot = TILG.rotter.filter(r => r.tilknyttet);
+    if (!rot.length && !TILG.super) { logout(); show($("lmsg"), "Brukeren er ikke koblet til en avdeling. Kontakt administrator.", "err"); return; }
+    let valg = null;
+    if (rot.length === 1) valg = rot[0].id;
+    else if (rot.length > 1 && !fersk && rot.some(r => r.id === +hent(ORGKEY))) valg = +hent(ORGKEY);
+    if (rot.length > 1 && valg == null) { visOrgvalg(rot); return; }
+    await gaaInn(valg);
+  } catch { if (S) { logout(); show($("lmsg"), "Kunne ikke hente tilgang.", "err"); } }
 }
+function visOrgvalg(rot){
+  $("orgliste").innerHTML = rot.map(r => `<button type="button" class="sec orgbtn" data-id="${r.id}">${esc(r.navn)}<small>${r.admin ? "Administrator" : "Bruker"}</small></button>`).join("");
+  view("orgvelg");
+}
+$("orgliste").onclick = async e => {
+  const b = e.target.closest("button[data-id]"); if (!b) return;
+  try { await gaaInn(+b.dataset.id); } catch { if (S) { view("orgvelg"); } }
+};
+$("orgut").onclick = logout;
+$("byttorg").onclick = () => { start(true); };
+
+async function gaaInn(valg){
+  ORG = valg; lagre(ORGKEY, valg);
+  const r = TILG.rotter.find(x => x.id === ORG);
+  ADMIN = !!TILG.super || !!(r && r.admin);
+  $("byttorg").hidden = TILG.rotter.filter(x => x.tilknyttet).length < 2;
+  let d = [];
+  if (ORG) {
+    NODER = await (await api("org_node?select=id,parent_id,navn,nivaa,sti,aktiv,nivaanavn&order=nivaa,navn")).json();
+    d = await (await api("bruker_avdeling?select=avdeling_id,avdeling(id,navn,aktiv,gps_modus,org_id)&user_id=eq." + myId())).json();
+  }
+  AVDS = d.map(x => x.avdeling).filter(a => a && a.aktiv).sort((a, b) => a.navn.localeCompare(b.navn, "nb"));
+  if (!AVDS.length && !ADMIN) { logout(); show($("lmsg"), "Brukeren har ingen aktive avdelinger. Kontakt administrator.", "err"); return; }
+  avdId = AVDS.length ? (AVDS.find(a => a.id === +hent(AVDKEY)) || AVDS[0]).id : null;
+  $("avdnavn").textContent = [r ? r.navn : "", AVDS.length === 1 ? AVDS[0].navn : "", ADMIN ? (TILG.super ? "Super-admin" : "Administrator") : ""].filter(Boolean).join(" · ");
+  $("avdvelgl").hidden = AVDS.length < 2;
+  $("avdvelg").innerHTML = AVDS.map(a => opt(a.id, a.navn + " (" + nodeNavn(a.org_id) + ")", a.id === avdId)).join("");
+  $("tab-adm").hidden = !ADMIN;
+  $("tab-reg").hidden = $("tab-ov").hidden = !avdId;
+  view("app");
+  $("dato").valueAsDate = new Date();
+  adminKlar = false; ST = null; RAP = null; $("rap-ut").innerHTML = "";
+  settAvd(avdId, true);
+  tab(avdId ? "reg" : "adm");
+}
+function settAvd(id, ny){
+  avdId = id; lagre(AVDKEY, id);
+  const a = AVDS.find(x => x.id === id);
+  GPSM = (a && a.gps_modus) || "av"; pos = null; $("gpsinp").value = ""; setupGps();
+  ST = null; KAT = [];
+  if (avdId) { hist(); loadKatalog(); if (!ny && !$("p-ov").hidden) loadStats(); }
+}
+$("avdvelg").onchange = () => settAvd(+$("avdvelg").value);
 
 async function hist(){
   try {
@@ -356,7 +448,22 @@ async function loadStats(){
   try {
     ST = await (await api("v_maned_oppsummering?select=avdeling_id,bruker_id,maned,timer")).json();
     renderStats();
+    $("arrtbl").innerHTML = arrGruppe(await rpc("rapport_arrangement", {p_node: null, p_avdeling: avdId, p_fra: "2000-01-01", p_til: "2100-12-31"}));
   } catch { if (S) show($("omsg"), "Kunne ikke hente oversikt.", "err"); }
+}
+// Timer per arrangement med aktivitetene gruppert under (rader fra rapport_arrangement)
+function arrGruppe(rows){
+  const m = new Map();
+  rows.forEach(r => {
+    const k = r.arrangement.trim().toLowerCase(), a = m.get(k) || m.set(k, {navn: r.arrangement, timer: 0, reg: 0, akt: []}).get(k);
+    if (r.aktivitet == null) { a.timer = Number(r.timer); a.reg = Number(r.registreringer); } else a.akt.push(r);
+  });
+  const l = [...m.values()].sort((a, b) => b.timer - a.timer);
+  if (!l.length) return '<div class="item"><small>Ingen registreringer i perioden</small></div>';
+  return '<table class="tv"><tr><th>Arrangement / aktivitet</th><th>Timer</th><th>Reg.</th></tr>' + l.map(a =>
+    `<tr class="ar1"><td>${esc(a.navn)}</td><td>${fmt(a.timer)}</td><td>${a.reg}</td></tr>` +
+    a.akt.sort((x, y) => Number(y.timer) - Number(x.timer)).map(k => `<tr class="ak"><td>${esc(k.aktivitet)}</td><td>${fmt(k.timer)}</td><td>${k.registreringer}</td></tr>`).join("")).join("") +
+    `<tr><td><b>Sum</b></td><td><b>${fmt(l.reduce((t, a) => t + a.timer, 0))}</b></td><td><b>${l.reduce((t, a) => t + a.reg, 0)}</b></td></tr></table>`;
 }
 function sums(mineOnly){
   const m = new Map(), me = myId();
@@ -415,13 +522,13 @@ function chart(vals, keys, kind){
 
 /* ---------- Admin ---------- */
 let AVD = [], BRUKERE = [], redig = null, RAP = null, TH = {}, adminSub = "rap", adminKlar = false;
-const avNavn = id => (AVD.find(a => a.id === id) || {}).navn || "Ukjent";
 const nbilder = r => (r.frivillig_bilde && r.frivillig_bilde[0] && r.frivillig_bilde[0].count) || 0;
+const NB = " ";
 
 async function fn(handling, data = {}, retry = true){
   const r = await fetch(SUPABASE_URL + "/functions/v1/admin-brukere", {
     method: "POST",
-    headers: {apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + S.access, "Content-Type": "application/json"},
+    headers: {apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + S.access, "Content-Type": "application/json", ...orgHode()},
     body: JSON.stringify({handling, ...data})
   });
   if (r.status === 401 && retry && S.refresh) {
@@ -434,76 +541,144 @@ async function fn(handling, data = {}, retry = true){
   return j;
 }
 
-async function loadAvd(){ AVD = await (await api("avdeling?select=id,navn,aktiv,gps_modus&order=navn")).json(); }
-function fillAvdSelects(){
-  const r = $("rav").value, b = $("bav").value, x = $("xav").value;
-  $("rav").innerHTML = '<option value="">Alle avdelinger</option>' + AVD.map(a => `<option value="${a.id}">${esc(a.navn)}${a.aktiv ? "" : " (deaktivert)"}</option>`).join("");
-  $("bav").innerHTML = '<option value="">Ingen (kun administrator)</option>' + AVD.map(a => `<option value="${a.id}">${esc(a.navn)}${a.aktiv ? "" : " (deaktivert)"}</option>`).join("");
-  $("xav").innerHTML = AVD.map(a => `<option value="${a.id}">${esc(a.navn)}${a.aktiv ? "" : " (deaktivert)"}</option>`).join("");
-  $("rav").value = r; $("bav").value = b; if (x) $("xav").value = x;
+/* --- Organisasjonstreet: hva administratoren har tilgang til --- */
+const nodeById = id => NODER.find(n => n.id === id);
+const nodeNavn = id => (nodeById(id) || {}).navn || "Ukjent";
+const avNavn = id => (AVD.find(a => a.id === id) || AVDS.find(a => a.id === id) || {}).navn || "Ukjent";
+const iOmr = id => { const n = nodeById(id); return !!n && (!!TILG.super || n.sti.some(s => TOPS.includes(s))); };
+const nivaaNavn = n => { const r = nodeById(n.sti[0]); return (r && r.nivaanavn && r.nivaanavn[n.nivaa - 1]) || "Nivå " + n.nivaa; };
+const nodeEtikett = n => NB.repeat((n.nivaa - 1) * 2) + n.navn + (n.aktiv ? "" : " (deaktivert)");
+const iNode = (a, node) => node == null || (nodeById(a.org_id) ? nodeById(a.org_id).sti.includes(node) : false);
+function tre(noder){   // dybde først: overordnet før underordnet, søsken alfabetisk
+  const ids = new Set(noder.map(n => n.id)), barn = new Map(), ut = [];
+  const sort = l => l.sort((a, b) => a.navn.localeCompare(b.navn, "nb"));
+  noder.forEach(n => { const k = ids.has(n.parent_id) ? n.parent_id : 0; (barn.get(k) || barn.set(k, []).get(k)).push(n); });
+  const gaa = n => { ut.push(n); sort(barn.get(n.id) || []).forEach(gaa); };
+  sort(barn.get(0) || []).forEach(gaa);
+  return ut;
 }
+const omrNoder = () => tre(NODER.filter(n => iOmr(n.id)));
+
+async function loadOrg(){
+  NODER = await (await api("org_node?select=id,parent_id,navn,nivaa,sti,aktiv,nivaanavn&order=nivaa,navn")).json();
+  TOPS = TILG.super ? NODER.filter(n => !n.parent_id).map(n => n.id)
+    : (await (await api("org_admin?select=org_id&user_id=eq." + myId())).json()).map(x => x.org_id);
+}
+async function loadAvd(){
+  AVD = (await (await api("avdeling?select=id,navn,aktiv,gps_modus,org_id&order=navn")).json()).filter(a => iOmr(a.org_id));
+}
+function behold(el, html){ const v = el.value; el.innerHTML = html; if ([...el.options].some(o => o.value === v)) el.value = v; }
+function fillRav(){
+  const node = $("rnode").value ? +$("rnode").value : null;
+  behold($("rav"), opt("", "Alle avdelinger i området") + AVD.filter(a => iNode(a, node)).map(a => opt(a.id, a.navn + (a.aktiv ? "" : " (deaktivert)"))).join(""));
+}
+function fillSelects(){
+  const noder = omrNoder();
+  behold($("rnode"), (TILG.super ? opt("", "Alle organisasjoner") : "") + noder.map(n => opt(n.id, nodeEtikett(n))).join(""));
+  fillRav();
+  behold($("xav"), AVD.map(a => opt(a.id, a.navn + " (" + nodeNavn(a.org_id) + ")" + (a.aktiv ? "" : " – deaktivert"))).join(""));
+  behold($("anode"), noder.map(n => opt(n.id, nodeEtikett(n))).join(""));
+  behold($("nnode"), (TILG.super ? opt("", "(ny organisasjon – toppnivå)") : "") + noder.filter(n => n.nivaa < 5).map(n => opt(n.id, nodeEtikett(n))).join(""));
+}
+$("rnode").onchange = fillRav;
+
 async function loadAdmin(){
   try {
-    await loadAvd(); fillAvdSelects();
+    await loadOrg(); await loadAvd(); fillSelects();
     if (!adminKlar) { const n = new Date(); $("rfra").value = n.getFullYear() + "-01"; $("rtil").value = n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0"); adminKlar = true; }
     sub(adminSub);
-  } catch { if (S) show($("rmsg2"), "Kunne ikke hente avdelinger.", "err"); }
+  } catch { if (S) show($("rmsg2"), "Kunne ikke hente organisasjonen.", "err"); }
 }
 function sub(n){
   adminSub = n;
-  for (const k of ["rap", "bru", "avd", "arr"]) { $("a-" + k).hidden = k !== n; document.querySelector(`.sub button[data-a="${k}"]`).classList.toggle("on", k === n); }
+  for (const k of ["rap", "bru", "org", "avd", "arr"]) { $("a-" + k).hidden = k !== n; document.querySelector(`.sub button[data-a="${k}"]`).classList.toggle("on", k === n); }
   if (n === "bru") loadBrukere();
+  if (n === "org") renderOrg();
   if (n === "avd") renderAvd();
   if (n === "arr") loadArr();
 }
 document.querySelectorAll(".sub button").forEach(b => b.onclick = () => sub(b.dataset.a));
 
-/* --- Rapporter for alle avdelinger --- */
+/* --- Rapporter: nivåene rulles opp. Timer per nivå, og per arrangement med aktivitetene gruppert --- */
 $("rf2").onsubmit = async e => {
   e.preventDefault(); show($("rmsg2"), "", "");
-  const fra = $("rfra").value, til = $("rtil").value, av = $("rav").value;
+  const fra = $("rfra").value, til = $("rtil").value, node = $("rnode").value ? +$("rnode").value : null, av = $("rav").value ? +$("rav").value : null;
   if (!fra || !til || fra > til) { show($("rmsg2"), "Velg en gyldig periode.", "err"); return; }
   const [ty, tm] = til.split("-").map(Number), slutt = `${til}-${String(new Date(ty, tm, 0).getDate()).padStart(2, "0")}`;
+  const P = {p_fra: fra + "-01", p_til: slutt};
   $("rbtn2").disabled = true;
   try {
-    let q = `frivillig_timer?select=id,avdeling_id,arrangement,aktivitet,dato,antall_ressurser,timer_per_ressurs,totalt_timer,kommentar,breddegrad,lengdegrad,frivillig_bilde(count)&dato=gte.${fra}-01&dato=lte.${slutt}&order=dato.desc,id.desc&limit=1000`;
-    if (av) q += "&avdeling_id=eq." + av;
-    RAP = {rows: await (await api(q)).json(), av, fra, til}; TH = {};
+    const [mnd, enh, arr] = await Promise.all([
+      rpc("rapport_maned", {...P, p_node: node, p_avdeling: av}),
+      av ? [] : rpc("rapport_enheter", {...P, p_node: node}),
+      av ? rpc("rapport_arrangement", {...P, p_node: null, p_avdeling: av}) : rpc("rapport_arr_per_enhet", {...P, p_node: node})
+    ]);
+    let q = `frivillig_timer?select=id,avdeling_id,arrangement,aktivitet,dato,antall_ressurser,timer_per_ressurs,totalt_timer,kommentar,breddegrad,lengdegrad,frivillig_bilde(count)&dato=gte.${fra}-01&dato=lte.${slutt}&order=dato.desc,id.desc&limit=200`;
+    const ids = av ? [av] : (node == null ? null : AVD.filter(a => iNode(a, node)).map(a => a.id));
+    if (ids) q += "&avdeling_id=in.(" + (ids.length ? ids.join(",") : "0") + ")";
+    RAP = {mnd, enh, arr, rows: await (await api(q)).json(), av, node, fra, til}; TH = {};
     visRapport();
     if ($("rall").checked) bilderAlle();
   } catch { if (S) show($("rmsg2"), "Kunne ikke hente rapporten.", "err"); }
   $("rbtn2").disabled = false;
 };
 
+function nivaaTabell(enh, tot){
+  const noder = enh.filter(r => r.enhet_type === "node"), avds = enh.filter(r => r.enhet_type === "avdeling");
+  const ider = new Set(noder.map(r => r.enhet_id)), barn = new Map(), avd = new Map(), ut = [];
+  const push = (m, k, v) => (m.get(k) || m.set(k, []).get(k)).push(v), sort = l => l.sort((a, b) => a.navn.localeCompare(b.navn, "nb"));
+  noder.forEach(r => push(barn, ider.has(r.forelder_id) ? r.forelder_id : 0, r)); avds.forEach(r => push(avd, r.forelder_id, r));
+  const gaa = (r, d) => { ut.push({node: true, r, d}); sort(avd.get(r.enhet_id) || []).forEach(a => ut.push({node: false, r: a, d: d + 1})); sort(barn.get(r.enhet_id) || []).forEach(k => gaa(k, d + 1)); };
+  sort(barn.get(0) || []).forEach(r => gaa(r, 0));
+  const vis = ut.filter(x => x.r.aktiv || Number(x.r.timer) > 0);
+  const mx = Math.max(...vis.map(x => Number(x.r.timer)), 1);
+  return `<table class="tv"><tr><th>Nivå / avdeling</th><th>Timer</th><th>Andel</th><th>Reg.</th></tr>` + vis.map(x => {
+    const t = Number(x.r.timer), n = x.node ? nodeById(x.r.enhet_id) : null;
+    return `<tr class="${x.node ? "nd" : "av"}"><td style="padding-left:${x.d * 14 + 4}px">${esc(x.r.navn)} <span class="hint">${x.node ? esc(n ? nivaaNavn(n) : "Nivå " + x.r.nivaa) : "avdeling"}</span><div class="bar-h"><i style="width:${(t / mx * 100).toFixed(1)}%"></i></div></td>
+      <td>${fmt(t)}</td><td>${tot ? Math.round(t / tot * 100) : 0} %</td><td>${x.r.registreringer}</td></tr>`;
+  }).join("") + "</table>";
+}
+
+function arrMatrise(arr, enh){
+  const navnEnhet = k => { const [t, id] = k.split(":"); const f = enh.find(r => r.enhet_type === t && r.enhet_id === +id); return f ? f.navn : (t === "node" ? nodeNavn(+id) : avNavn(+id)); };
+  const tot = new Map(), A = new Map();
+  const ny = (m, k, navn) => m.get(k) || m.set(k, {navn, per: new Map(), total: 0, akt: new Map()}).get(k);
+  for (const r of arr) {
+    const e = r.enhet_type + ":" + r.enhet_id, t = Number(r.timer), a = ny(A, r.arrangement.trim().toLowerCase(), r.arrangement);
+    if (r.aktivitet == null) { a.per.set(e, (a.per.get(e) || 0) + t); a.total += t; tot.set(e, (tot.get(e) || 0) + t); }
+    else { const x = ny(a.akt, r.aktivitet.trim().toLowerCase(), r.aktivitet); x.per.set(e, (x.per.get(e) || 0) + t); x.total += t; }
+  }
+  const enheter = [...tot.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]);
+  const celle = (p, e) => `<td>${p.get(e) ? fmt(p.get(e)) : "–"}</td>`;
+  const rader = [...A.values()].sort((a, b) => b.total - a.total).map(a =>
+    `<tr class="ar1"><td>${esc(a.navn)}</td>${enheter.map(e => celle(a.per, e)).join("")}<td>${fmt(a.total)}</td></tr>` +
+    [...a.akt.values()].sort((x, y) => y.total - x.total).map(k => `<tr class="ak"><td>${esc(k.navn)}</td>${enheter.map(e => celle(k.per, e)).join("")}<td>${fmt(k.total)}</td></tr>`).join("")).join("");
+  const sum = [...tot.values()].reduce((a, b) => a + b, 0);
+  return `<div class="mx"><table class="tv"><tr><th>Arrangement / aktivitet</th>${enheter.map(e => `<th>${esc(navnEnhet(e))}</th>`).join("")}<th>Sum</th></tr>${rader}
+    <tr><td><b>Sum</b></td>${enheter.map(e => `<td><b>${fmt(tot.get(e))}</b></td>`).join("")}<td><b>${fmt(sum)}</b></td></tr></table></div>`;
+}
+
 function visRapport(){
-  const {rows, av, fra, til} = RAP, num = r => Number(r.totalt_timer);
-  const tot = rows.reduce((a, r) => a + num(r), 0), nb_ = rows.reduce((a, r) => a + nbilder(r), 0);
-  const arr = new Set(rows.map(r => r.avdeling_id + "|" + r.arrangement.trim().toLowerCase())).size;
-  const mnd = new Map(); rows.forEach(r => { const k = r.dato.slice(0, 7); mnd.set(k, (mnd.get(k) || 0) + num(r)); });
+  const {mnd, enh, arr, rows, av, node, fra, til} = RAP;
+  const M = new Map(mnd.map(m => [String(m.maned).slice(0, 7), Number(m.timer)]));
+  const sum = f => mnd.reduce((a, m) => a + Number(m[f]), 0), tot = sum("timer");
+  const nArr = new Set(arr.filter(r => r.aktivitet == null).map(r => r.arrangement.trim().toLowerCase())).size;
   const keys = []; let [y, m] = fra.split("-").map(Number);
   while (y + "-" + String(m).padStart(2, "0") <= til) { keys.push(y + "-" + String(m).padStart(2, "0")); if (++m > 12) { m = 1; y++; } }
-  const vals = keys.map(k => mnd.get(k) || 0); let run = 0; const cum = vals.map(v => (run += v));
+  const vals = keys.map(k => M.get(k) || 0); let run = 0; const cum = vals.map(v => (run += v));
   const n = Math.min(12, keys.length), kk = keys.slice(-n);
-
-  let html = `<div class="rh"><h2>Rapport – ${av ? esc(avNavn(+av)) : "alle avdelinger"}</h2><button type="button" class="sec sm noprint" id="rprint">Skriv ut / lagre som PDF</button></div>
-    <div class="hint" style="margin:2px 0 12px">${lab(fra)} – ${lab(til)}</div>
-    <div class="kpis"><div class="kpi"><span>Timer totalt</span><b>${fmt(tot)}</b></div><div class="kpi"><span>Registreringer</span><b>${rows.length}</b></div>
-    <div class="kpi"><span>Arrangementer</span><b>${arr}</b></div><div class="kpi"><span>Bilder</span><b>${nb_}</b></div></div>`;
-  if (rows.length >= 1000) html += '<div class="msg err" style="display:block;margin-bottom:12px">Viser de 1000 nyeste registreringene. Velg en kortere periode for full oversikt.</div>';
-
-  if (!av) {
-    const pa = new Map(AVD.filter(a => a.aktiv).map(a => [a.id, {t: 0, n: 0, x: 0}]));
-    rows.forEach(r => { const o = pa.get(r.avdeling_id) || {t: 0, n: 0, x: 0}; o.t += num(r); o.n++; o.x += r.antall_ressurser; pa.set(r.avdeling_id, o); });
-    const lst = [...pa.entries()].sort((a, b) => b[1].t - a[1].t), mx = Math.max(...lst.map(l => l[1].t), 1);
-    html += `<div class="card"><strong>Per avdeling (sammenstilt)</strong><table class="tv"><tr><th>Avdeling</th><th>Timer</th><th>Andel</th><th>Reg.</th></tr>` +
-      lst.map(([id, o]) => `<tr><td>${esc(avNavn(id))}<div class="bar-h"><i style="width:${(o.t / mx * 100).toFixed(1)}%"></i></div></td><td>${fmt(o.t)}</td><td>${tot ? Math.round(o.t / tot * 100) : 0} %</td><td>${o.n}</td></tr>`).join("") +
-      `<tr><td><b>Sum</b></td><td><b>${fmt(tot)}</b></td><td><b>${tot ? "100 %" : "–"}</b></td><td><b>${rows.length}</b></td></tr></table></div>`;
-  }
+  const nn = node ? nodeById(node) : null;
+  let html = `<div class="rh"><h2>Rapport – ${av ? esc(avNavn(av)) : nn ? esc(nn.navn) : "alle organisasjoner"}</h2><button type="button" class="sec sm noprint" id="rprint">Skriv ut / lagre som PDF</button></div>
+    <div class="hint" style="margin:2px 0 12px">${lab(fra)} – ${lab(til)}${!av && nn ? " · " + esc(nivaaNavn(nn)) + " med underordnede nivåer og avdelinger" : ""}</div>
+    <div class="kpis"><div class="kpi"><span>Timer totalt</span><b>${fmt(tot)}</b></div><div class="kpi"><span>Registreringer</span><b>${sum("registreringer")}</b></div>
+    <div class="kpi"><span>Arrangementer</span><b>${nArr}</b></div><div class="kpi"><span>Ressurser (sum)</span><b>${sum("ressurser")}</b></div></div>`;
+  if (!av) html += `<div class="card"><strong>Timer per nivå</strong><div class="hint">Hvert nivå viser summen av alt under seg: underordnede nivåer og avdelinger.</div>${nivaaTabell(enh, tot)}</div>`;
+  html += `<div class="card"><strong>Timer per arrangement${av ? "" : " og nivå"}</strong><div class="hint">Aktivitetene er gruppert under arrangementet. ${av ? "" : "Kolonnene er enhetene rett under valgt nivå. "}Arrangementer med samme navn slås sammen.</div>${av ? arrGruppe(arr) : arrMatrise(arr, enh)}</div>`;
   html += `<div class="card"><strong>Timer per måned</strong>${chart(vals.slice(-n), kk, "bar")}</div>
     <div class="card"><strong>Akkumulert antall timer</strong>${chart(cum.slice(-n), kk, "line")}</div>
     <div class="card"><strong>Måned for måned</strong><table class="tv"><tr><th>Måned</th><th>Timer</th><th>Akkumulert</th></tr>` +
     keys.map((k, i) => `<tr><td>${lab(k)}</td><td>${fmt(vals[i])}</td><td>${fmt(cum[i])}</td></tr>`).reverse().join("") + `</table></div>`;
-  html += `<div class="card"><strong>Registreringer${rows.length > 200 ? " (200 nyeste)" : ""}</strong>` + (rows.length ? rows.slice(0, 200).map(r => {
+  html += `<div class="card"><strong>Registreringer${rows.length >= 200 ? " (200 nyeste)" : ""}</strong>` + (rows.length ? rows.map(r => {
     const nbld = nbilder(r);
     const sted = r.breddegrad != null ? ` · <a href="https://www.openstreetmap.org/?mlat=${+r.breddegrad}&mlon=${+r.lengdegrad}#map=17/${+r.breddegrad}/${+r.lengdegrad}" target="_blank" rel="noopener">${(+r.breddegrad).toFixed(5)}, ${(+r.lengdegrad).toFixed(5)}</a>` : "";
     return `<div class="item"><div>${esc(r.arrangement)} › ${esc(r.aktivitet || "")}<small>${esc(r.dato)}${av ? "" : " · " + esc(avNavn(r.avdeling_id))} · ${r.antall_ressurser} × ${r.timer_per_ressurs} t${r.kommentar ? " · " + esc(r.kommentar) : ""}${sted}</small><div class="mini" id="m${r.id}"></div></div>
@@ -521,7 +696,7 @@ async function bildeFor(id){
 }
 async function bilderAlle(){
   if (!RAP) return;
-  const ids = RAP.rows.slice(0, 200).filter(r => nbilder(r)).map(r => r.id).slice(0, 100);
+  const ids = RAP.rows.filter(r => nbilder(r)).map(r => r.id).slice(0, 100);
   if (!$("rall").checked) { ids.forEach(id => { const e = $("m" + id); if (e) e.innerHTML = ""; }); return; }
   try {
     for (let i = 0; i < ids.length; i += 25) {
@@ -537,80 +712,138 @@ $("rap-ut").onclick = e => {
   const b = e.target.closest("button[data-b]"); if (b) bildeFor(b.dataset.b).catch(() => {});
 };
 
-/* --- Brukere --- */
+/* --- Brukere: administratoren ser og endrer kun koblinger i eget område --- */
 const sist = d => d ? new Date(d).toLocaleDateString("nb-NO") : "aldri";
 async function loadBrukere(){
   show($("bmsg"), "", ""); $("bliste").innerHTML = '<div class="item"><small>Laster…</small></div>';
-  try { BRUKERE = (await fn("liste")).brukere; renderBrukere(); }
-  catch (e) { $("bliste").innerHTML = ""; if (S) show($("bmsg"), e.message, "err"); }
+  try { BRUKERE = await rpc("admin_brukere"); renderBrukere(); }
+  catch (e) { $("bliste").innerHTML = ""; if (S) show($("bmsg"), "Kunne ikke hente brukerne.", "err"); }
 }
 function renderBrukere(){
   $("bliste").innerHTML = BRUKERE.length ? BRUKERE.map(b => `<div class="item"><div><b style="word-break:break-all">${esc(b.epost)}</b>
-    <small>${b.avdeling_id ? esc(avNavn(b.avdeling_id)) : "Ingen avdeling"} · ${b.er_admin ? "Administrator" : "Bruker"}${b.deaktivert ? " · Deaktivert" : ""} · sist innlogget ${sist(b.sist_innlogget)}</small></div>
-    <button type="button" class="sec sm" data-id="${esc(b.id)}">Rediger</button></div>`).join("") : '<div class="item"><small>Ingen brukere</small></div>';
+    <small>${b.avdelinger.length ? "Avdeling: " + esc(b.avdelinger.map(a => a.navn).join(", ")) : "Ingen avdeling i ditt område"}</small>
+    ${b.admin_for.length ? `<small>Administrator for: ${esc(b.admin_for.map(n => n.navn).join(", "))}</small>` : ""}
+    <small>${b.er_super ? "Super-admin · " : ""}${b.deaktivert ? "Deaktivert · " : ""}${b.utenfor ? "Har også tilknytning utenfor ditt område · " : ""}sist innlogget ${sist(b.sist_innlogget)}</small></div>
+    <button type="button" class="sec sm" data-id="${esc(b.bruker_id)}">Rediger</button></div>`).join("") : '<div class="item"><small>Ingen brukere</small></div>';
 }
+function sjekkliste(el, items, valgte){
+  el.innerHTML = items.map(i => `<label class="chk"><input type="checkbox" value="${i.v}"${valgte.has(i.v) ? " checked" : ""}> <span>${i.t}</span></label>`).join("") || '<span class="hint">Ingen tilgjengelige</span>';
+}
+const kryssede = el => [...el.querySelectorAll("input:checked")].map(i => +i.value);
 function bform(b){
   redig = b || null; $("bf").hidden = false; $("btitle").textContent = b ? "Rediger bruker" : "Ny bruker";
   $("bem").value = b ? b.epost : ""; $("bem").readOnly = !!b;
-  $("bpw").value = ""; $("bpw").required = !b; $("bpw").placeholder = b ? "La stå tom for å beholde" : "Minst 8 tegn";
-  $("bav").value = b && b.avdeling_id ? String(b.avdeling_id) : ""; $("badm").checked = !!(b && b.er_admin);
-  $("bdea").checked = !!(b && b.deaktivert); $("bdearad").hidden = !b; $("bslett").hidden = !b;
+  const ut = !!(b && b.utenfor);
+  $("bpw").value = ""; $("bpw").disabled = ut; $("bpw").placeholder = b ? "La stå tom for å beholde" : "Minst 8 tegn (ikke nødvendig hvis brukeren finnes fra før)";
+  sjekkliste($("bavd"), AVD.map(a => ({v: a.id, t: esc(a.navn) + ` <span class="hint">(${esc(nodeNavn(a.org_id))})</span>`})), new Set(b ? b.avdelinger.map(a => a.id) : []));
+  sjekkliste($("bnod"), omrNoder().map(n => ({v: n.id, t: esc(nodeEtikett(n))})), new Set(b ? b.admin_for.map(n => n.id) : []));
+  $("bsuperrad").hidden = !TILG.super; $("bsuper").checked = !!(b && b.er_super);
+  $("bdea").checked = !!(b && b.deaktivert); $("bdea").disabled = ut; $("bdearad").hidden = !b; $("bslett").hidden = !b;
+  $("butenfor").hidden = !ut;
+  $("bslett").textContent = ut ? "Fjern fra mitt område" : "Slett bruker";
   show($("bmsg2"), "", ""); $("bf").scrollIntoView({behavior: "smooth", block: "nearest"});
 }
 $("bny").onclick = () => bform(null);
 $("bavbryt").onclick = () => { $("bf").hidden = true; redig = null; };
-$("bliste").onclick = e => { const b = e.target.closest("button[data-id]"); if (b) bform(BRUKERE.find(x => x.id === b.dataset.id)); };
+$("bliste").onclick = e => { const b = e.target.closest("button[data-id]"); if (b) bform(BRUKERE.find(x => x.bruker_id === b.dataset.id)); };
 $("bgen").onclick = () => {
   const tegn = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", a = crypto.getRandomValues(new Uint32Array(12));
   $("bpw").value = [...a].map(x => tegn[x % tegn.length]).join("");
 };
 $("bf").onsubmit = async e => {
   e.preventDefault(); $("blagre").disabled = true; show($("bmsg2"), "", "");
-  const avd = $("bav").value ? +$("bav").value : null, pw = $("bpw").value, erAdm = $("badm").checked;
+  const avdl = kryssede($("bavd")), nod = kryssede($("bnod")), pw = $("bpw").value, erSuper = TILG.super && $("bsuper").checked;
   try {
     let ok;
     if (redig) {
-      const d = {bruker_id: redig.id, avdeling_id: avd, er_admin: erAdm, deaktivert: $("bdea").checked}; if (pw) d.passord = pw;
-      await fn("oppdater", d); ok = "Bruker oppdatert." + (pw ? " Nytt passord: " + pw : "");
+      const d = {bruker_id: redig.bruker_id, avdelinger: avdl, noder: nod};
+      if (TILG.super) d.er_super = erSuper;
+      if (!redig.utenfor) { d.deaktivert = $("bdea").checked; if (pw) d.passord = pw; }
+      await fn("oppdater", d); ok = "Bruker oppdatert." + (pw && !redig.utenfor ? " Nytt passord: " + pw : "");
     } else {
-      await fn("opprett", {epost: $("bem").value.trim(), passord: pw, avdeling_id: avd, er_admin: erAdm});
-      ok = "Bruker opprettet. Passord: " + pw + " (gi det videre på en trygg måte; brukeren kan bytte det selv).";
+      const r = await fn("opprett", {epost: $("bem").value.trim(), passord: pw, avdelinger: avdl, noder: nod, er_super: erSuper});
+      ok = r.eksisterte ? "Brukeren fantes fra før og er koblet til. Passord og andre tilknytninger er uendret."
+        : "Bruker opprettet. Passord: " + pw + " (gi det videre på en trygg måte; brukeren kan bytte det selv).";
     }
     $("bf").hidden = true; redig = null; await loadBrukere(); show($("bmsg"), ok, "ok");
   } catch (er) { if (S) show($("bmsg2"), er.message, "err"); }
   $("blagre").disabled = false;
 };
 $("bslett").onclick = async () => {
-  if (!redig || !confirm("Slette brukeren " + redig.epost + "? Dette kan ikke angres. Registrerte timer beholdes.")) return;
-  try { await fn("slett", {bruker_id: redig.id}); $("bf").hidden = true; redig = null; await loadBrukere(); show($("bmsg"), "Bruker slettet.", "ok"); }
-  catch (er) { if (S) show($("bmsg2"), er.message, "err"); }
+  if (!redig) return;
+  const ut = redig.utenfor;
+  if (!confirm(ut ? `Fjerne ${redig.epost} fra ditt område? Kontoen beholdes fordi brukeren har tilknytning andre steder.`
+                  : `Slette brukeren ${redig.epost}? Dette kan ikke angres. Registrerte timer beholdes.`)) return;
+  try {
+    const r = await fn("slett", {bruker_id: redig.bruker_id}); $("bf").hidden = true; redig = null; await loadBrukere();
+    show($("bmsg"), r.kun_koblinger ? "Brukeren er fjernet fra ditt område. Kontoen finnes fortsatt." : "Bruker slettet.", "ok");
+  } catch (er) { if (S) show($("bmsg2"), er.message, "err"); }
+};
+
+/* --- Organisasjonsnivåer --- */
+const dupNavn = er => er && er.status === 409 ? "Det finnes allerede et nivå med dette navnet her." : null;
+function renderOrg(){
+  show($("omsg2"), "", "");
+  $("oliste").innerHTML = tre(NODER).map(n => {
+    const ind = (n.nivaa - 1) * 12;
+    if (!iOmr(n.id)) return `<div class="item" style="margin-left:${ind}px"><small>${esc(n.navn)} <span class="pill">${esc(nivaaNavn(n))}</span> · over ditt område</small></div>`;
+    const kanRedigere = TILG.super || !TOPS.includes(n.id);
+    return `<div class="arow" data-id="${n.id}" style="margin-left:${ind}px"><input type="text" maxlength="80" value="${esc(n.navn)}" aria-label="Navn på nivå"${kanRedigere ? "" : " disabled"}>
+      <label class="chk"><input type="checkbox" class="oakt" ${n.aktiv ? "checked" : ""}${kanRedigere ? "" : " disabled"}> Aktiv</label>${kanRedigere ? '<button type="button" class="sec sm">Lagre</button>' : "<span></span>"}
+      <span class="hint" style="grid-column:1/-1">${esc(nivaaNavn(n))} · nivå ${n.nivaa} av 5${kanRedigere ? "" : " · ditt toppnivå (endres av nivået over)"}</span>
+      ${!n.parent_id && TILG.super ? `<input type="text" class="onn" style="grid-column:1/-1" placeholder="Navn på nivåene, f.eks. Forbund, Region, Krets, Lag, Gruppe" value="${esc((n.nivaanavn || []).join(", "))}" aria-label="Navn på nivåene">` : ""}</div>`;
+  }).join("") || '<div class="item"><small>Ingen nivåer ennå.</small></div>';
+}
+$("oliste").onclick = async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const row = b.closest(".arow"), navn = row.querySelector("input[type=text]").value.trim(), aktiv = row.querySelector(".oakt").checked;
+  show($("omsg2"), "", "");
+  if (!navn) { show($("omsg2"), "Navn kan ikke være tomt.", "err"); return; }
+  const body = {navn, aktiv}, nn = row.querySelector(".onn");
+  if (nn) body.nivaanavn = nn.value.split(",").map(x => x.trim()).filter(Boolean).slice(0, 5);
+  try {
+    const r = await (await api("org_node?id=eq." + row.dataset.id, {method: "PATCH", headers: {Prefer: "return=representation"}, body: JSON.stringify(body)})).json();
+    if (!r.length) throw new Error("ingen");
+    await loadOrg(); await loadAvd(); fillSelects(); renderOrg(); show($("omsg2"), "Lagret.", "ok");
+  } catch (er) { if (S) show($("omsg2"), dupNavn(er) || "Kunne ikke lagre.", "err"); }
+};
+$("nlegg").onclick = async () => {
+  const navn = $("nnavn").value.trim(), forelder = $("nnode").value ? +$("nnode").value : null; show($("omsg2"), "", "");
+  if (!navn) { show($("omsg2"), "Skriv inn et navn.", "err"); return; }
+  try {
+    await api("org_node", {method: "POST", headers: {Prefer: "return=minimal"}, body: JSON.stringify({parent_id: forelder, navn})});
+    $("nnavn").value = ""; await loadOrg(); fillSelects(); renderOrg(); show($("omsg2"), "Nivå opprettet.", "ok");
+  } catch (er) { if (S) show($("omsg2"), dupNavn(er) || (er.melding && er.kode === "P0001" ? er.melding + "." : "Kunne ikke opprette nivået."), "err"); }
 };
 
 /* --- Avdelinger --- */
 const GPSTXT = {av: "Posisjon: av", valgfri: "Posisjon: valgfri", pakrevd: "Posisjon: påkrevd"};
 function renderAvd(){
+  const noder = omrNoder();
   $("aliste").innerHTML = AVD.map(a => `<div class="arow" data-id="${a.id}"><input type="text" maxlength="80" value="${esc(a.navn)}" aria-label="Navn" style="grid-column:1/-1">
-    <select aria-label="Posisjon (GPS)">${Object.keys(GPSTXT).map(k => opt(k, GPSTXT[k], (a.gps_modus || "av") === k)).join("")}</select>
-    <label class="chk"><input type="checkbox" ${a.aktiv ? "checked" : ""}> Aktiv</label><button type="button" class="sec sm">Lagre</button></div>`).join("");
+    <select class="snode" aria-label="Hører til nivå" style="grid-column:1/-1">${noder.map(n => opt(n.id, nodeEtikett(n), n.id === a.org_id)).join("")}</select>
+    <select class="sgps" aria-label="Posisjon (GPS)">${Object.keys(GPSTXT).map(k => opt(k, GPSTXT[k], (a.gps_modus || "av") === k)).join("")}</select>
+    <label class="chk"><input type="checkbox" ${a.aktiv ? "checked" : ""}> Aktiv</label><button type="button" class="sec sm">Lagre</button></div>`).join("") || '<div class="item"><small>Ingen avdelinger ennå.</small></div>';
 }
 $("aliste").onclick = async e => {
   const b = e.target.closest("button"); if (!b) return;
-  const row = b.closest(".arow"), navn = row.querySelector("input[type=text]").value.trim(), aktiv = row.querySelector("input[type=checkbox]").checked, gps_modus = row.querySelector("select").value;
+  const row = b.closest(".arow"), navn = row.querySelector("input[type=text]").value.trim(), aktiv = row.querySelector("input[type=checkbox]").checked;
+  const gps_modus = row.querySelector(".sgps").value, org_id = +row.querySelector(".snode").value;
   show($("amsg"), "", "");
   if (!navn) { show($("amsg"), "Navn kan ikke være tomt.", "err"); return; }
   try {
-    const r = await (await api("avdeling?id=eq." + row.dataset.id, {method: "PATCH", headers: {Prefer: "return=representation"}, body: JSON.stringify({navn, aktiv, gps_modus})})).json();
+    const r = await (await api("avdeling?id=eq." + row.dataset.id, {method: "PATCH", headers: {Prefer: "return=representation"}, body: JSON.stringify({navn, aktiv, gps_modus, org_id})})).json();
     if (!r.length) throw new Error("ingen");
-    await loadAvd(); fillAvdSelects(); renderAvd(); show($("amsg"), "Lagret.", "ok");
-  } catch (er) { if (S) show($("amsg"), er.status === 409 ? "Det finnes allerede en avdeling med dette navnet." : "Kunne ikke lagre.", "err"); }
+    await loadAvd(); fillSelects(); renderAvd(); show($("amsg"), "Lagret.", "ok");
+  } catch (er) { if (S) show($("amsg"), er.status === 409 ? "Det finnes allerede en avdeling med dette navnet på nivået." : "Kunne ikke lagre.", "err"); }
 };
 $("alegg").onclick = async () => {
   const navn = $("anavn").value.trim(); show($("amsg"), "", "");
   if (!navn) { show($("amsg"), "Skriv inn et navn.", "err"); return; }
   try {
-    await api("avdeling", {method: "POST", headers: {Prefer: "return=minimal"}, body: JSON.stringify({navn})});
-    $("anavn").value = ""; await loadAvd(); fillAvdSelects(); renderAvd(); show($("amsg"), "Avdeling opprettet.", "ok");
-  } catch (er) { if (S) show($("amsg"), er.status === 409 ? "Det finnes allerede en avdeling med dette navnet." : "Kunne ikke opprette avdelingen.", "err"); }
+    await api("avdeling", {method: "POST", headers: {Prefer: "return=minimal"}, body: JSON.stringify({navn, org_id: +$("anode").value})});
+    $("anavn").value = ""; await loadAvd(); fillSelects(); renderAvd(); show($("amsg"), "Avdeling opprettet.", "ok");
+  } catch (er) { if (S) show($("amsg"), er.status === 409 ? "Det finnes allerede en avdeling med dette navnet på nivået." : "Kunne ikke opprette avdelingen.", "err"); }
 };
 
 /* --- Arrangement og aktiviteter (admin) --- */
@@ -710,7 +943,7 @@ $("lf").onsubmit = async e => {
   e.preventDefault(); $("lbtn").disabled = true; show($("lmsg"), "", "");
   try {
     S = await auth("token?grant_type=password", {email: $("em").value.trim(), password: $("pw").value});
-    save(S); $("pw").value = ""; await start();
+    save(S); $("pw").value = ""; await start(true);
   } catch { show($("lmsg"), "Feil e-post eller passord.", "err"); }
   $("lbtn").disabled = false;
 };
@@ -737,7 +970,8 @@ $("f").onsubmit = async e => {
       p_registrert_av: $("av").value.trim() || null, p_kommentar: $("kom").value.trim() || null,
       p_bilder: fotos.map(f => ({filnavn: f.name, mime: f.mime, data: f.data, miniatyr: f.thumb})),
       p_breddegrad: GPSM !== "av" && pos ? pos.lat : null, p_lengdegrad: GPSM !== "av" && pos ? pos.lng : null,
-      p_noyaktighet: GPSM !== "av" && pos ? pos.acc : null, p_posisjon_kilde: GPSM !== "av" && pos ? pos.kilde : null
+      p_noyaktighet: GPSM !== "av" && pos ? pos.acc : null, p_posisjon_kilde: GPSM !== "av" && pos ? pos.kilde : null,
+      p_avdeling_id: avdId
     })});
     show($("msg"), `Lagret: ${antall} × ${timer} t = ${fmt(antall * timer)} timer` + (nb ? ` og ${nb} ${nb > 1 ? "bilder" : "bilde"}.` : "."), "ok");
     $("x").value = $("y").value = $("kom").value = ""; $("arrny").value = $("aktny").value = "";
